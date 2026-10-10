@@ -1,0 +1,78 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Footer } from "@/components/Footer";
+import { Magnetic } from "@/components/Magnetic";
+import { PieceCard } from "@/components/PieceCard";
+import { RiseChars } from "@/components/Text";
+import { pieceTrack, play, tick, useData, useSite } from "@/lib/site";
+
+const MODELS = [
+  { key: "v2", label: "Final model", note: "trained against real recordings" },
+  { key: "v1", label: "Rules only", note: "trained on our rules alone" },
+  { key: "sft", label: "Before RL", note: "fine-tuned on examples, no scoring yet" },
+];
+
+function Chip({ on, children, onClick }: { on: boolean; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button onClick={() => { tick("soft"); onClick(); }} className={`rounded-full border px-5 py-2.5 text-[15px] transition-all duration-300 ${on ? "border-saffron bg-saffron text-night" : "border-smoke text-ivory hover:border-saffron/60"}`}>
+      {children}
+    </button>
+  );
+}
+
+export default function Listen() {
+  const data = useData();
+  const [raga, setRaga] = useState("all");
+  const [model, setModel] = useState("v2");
+  const [sort, setSort] = useState<"best" | "order">("best");
+  const tracks = useMemo(() => {
+    if (!data) return [];
+    let ps = data.pieces.filter((p) => p.model === model && (raga === "all" || p.raga === raga));
+    if (sort === "best") ps = [...ps].sort((a, b) => b.reward - a.reward);
+    return ps.map((p) => pieceTrack(p));
+  }, [data, raga, model, sort]);
+  if (!data) return null;
+  const m = MODELS.find((x) => x.key === model)!;
+
+  return (
+    <main className="min-h-screen bg-night">
+      <section className="relative overflow-hidden px-6 pb-12 pt-36 sm:px-10">
+        <div className="pointer-events-none absolute -left-40 -top-40 h-[640px] w-[640px] rounded-full bg-saffron/10 blur-[140px]" />
+        <div className="relative mx-auto max-w-[1400px]">
+          <div className="text-[12px] uppercase tracking-[0.24em] text-mute">The library</div>
+          <h1 className="mt-4 font-display text-[clamp(72px,13vw,220px)] leading-[0.85]"><RiseChars text="Listen." /></h1>
+          <div className="mt-10 flex flex-wrap items-end justify-between gap-8">
+            <p className="max-w-[44ch] text-[19px] leading-[1.6] text-mute">
+              {data.pieces.length} pieces, each written by the model from nothing but a raga's name. Showing {tracks.length} by the <span className="text-ivory">{m.label.toLowerCase()}</span>, {m.note}.
+            </p>
+            <Magnetic variant="solid" size="lg" cursor="Play all" onClick={() => { useSite.getState().set({ queue: tracks }); if (tracks[0]) play(tracks[0], { open: true }); }}>▶ Play all, full screen</Magnetic>
+          </div>
+          <div className="mt-12 flex flex-wrap gap-x-8 gap-y-4 border-t border-smoke pt-8">
+            <div className="flex flex-wrap gap-2">
+              {["all", "bhupali", "yaman", "malkauns"].map((k) => <Chip key={k} on={raga === k} onClick={() => setRaga(k)}>{k === "all" ? "All ragas" : data.ragas.find((r) => r.key === k)!.name}</Chip>)}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {MODELS.map((x) => <Chip key={x.key} on={model === x.key} onClick={() => setModel(x.key)}>{x.label}</Chip>)}
+            </div>
+            <div className="flex gap-2">
+              <Chip on={sort === "best"} onClick={() => setSort("best")}>Highest score</Chip>
+              <Chip on={sort === "order"} onClick={() => setSort("order")}>As written</Chip>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className="px-6 pb-32 sm:px-10">
+        <div key={`${raga}-${model}-${sort}`} className="mx-auto grid max-w-[1400px] gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {tracks.map((t, i) => (
+            <div key={t.id} style={{ animation: `rise .9s cubic-bezier(.16,1,.3,1) ${Math.min(i, 12) * 50}ms both` }}>
+              <PieceCard track={t} queue={tracks} />
+              <div className="mt-2 px-2 text-right text-[13px] tabular-nums text-mute">score {t.reward?.toFixed(2)}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+      <Footer />
+    </main>
+  );
+}
