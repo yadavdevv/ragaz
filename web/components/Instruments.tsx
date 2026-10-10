@@ -194,9 +194,9 @@ export function Tabla({ className = "" }: { className?: string }) {
         )}
       </div>
       {/* the theka, as a strip of 16 beats */}
-      <div className="mt-6 grid grid-cols-8 gap-1.5 sm:grid-cols-16" style={{ gridTemplateColumns: "repeat(16, minmax(0, 1fr))" }}>
+      <div className="mt-6 grid grid-cols-8 gap-1.5 lg:grid-cols-[repeat(16,minmax(0,1fr))]">
         {BOLS.map((b, i) => (
-          <div key={i} className={`flex flex-col items-center border py-2 transition-all duration-150 ${i === beat ? "-translate-y-1 border-sindoor bg-sindoor text-paper" : "border-rule bg-leaf/70 text-kajal"} ${i % 4 === 0 && i ? "ml-1.5" : ""}`}>
+          <div key={i} className={`flex flex-col items-center border py-2 transition-all duration-150 ${i === beat ? "-translate-y-1 border-sindoor bg-sindoor text-paper" : "border-rule bg-leaf/70 text-kajal"} ${i % 4 === 0 && i % 8 ? "ml-1.5" : ""} ${i % 4 === 0 && i === 8 ? "lg:ml-1.5" : ""}`}>
             <span className="font-display text-[17px] leading-none">{b}</span>
             <span className={`mt-1 font-display text-[12px] ${i === beat ? "text-paper" : "text-sindoor"}`}>{SIGN[i] ?? " "}</span>
           </div>
@@ -233,7 +233,7 @@ export function Harmonium({ keys, onKey, raga = "bhupali", big = true, pressed }
   };
   const isDown = (k: Key) => down === `${k.s}${k.o}` || pressed === `${k.s}${k.o}`;
   return (
-    <div className="inline-block max-w-full select-none">
+    <div className="inline-block w-full max-w-full select-none lg:w-auto">
       {/* bellows */}
       <div className="relative mx-3 h-12 overflow-hidden rounded-t-md border-x-[3px] border-t-[3px] border-[#5E1F14] bg-paper2 transition-[height] duration-300 ease-out sm:h-14" style={{ height: air ? undefined : undefined }}>
         <div className="absolute inset-0 transition-transform duration-300 ease-out" style={{ transform: `scaleY(${1 - air * 0.22})`, transformOrigin: "bottom",
@@ -247,10 +247,10 @@ export function Harmonium({ keys, onKey, raga = "bhupali", big = true, pressed }
           </div>
           <div className="flex gap-1">{Array.from({ length: 6 }, (_, i) => <span key={i} className="h-1 w-6 rounded-full bg-[#A8853C]/70" />)}</div>
         </div>
-        <div className="flex gap-[3px] overflow-x-auto">
+        <div className="flex gap-[3px]">
           {keys.map((k) => (
             <button key={`${k.s}${k.o}`} data-cursor="Sing" onPointerDown={() => hit(k)}
-              className={`flex shrink-0 flex-col items-center justify-end rounded-b-md border border-[#cdbb98] pb-3 font-display shadow-[0_6px_0_#cdbb98] transition-all duration-100 ${big ? "h-44 w-[4.5rem] text-[24px] sm:h-52 sm:w-24" : "h-32 w-14 text-[20px]"} ${k.o === 0 ? "bg-[#FBF5E6] text-kajal" : "bg-[#F3E9D2] text-sepia"} ${isDown(k) ? "translate-y-1.5 bg-[#efe2c4] shadow-[0_2px_0_#cdbb98]" : "hover:bg-[#fffaf0]"}`}>
+              className={`flex shrink-0 flex-col items-center justify-end rounded-b-md border border-[#cdbb98] pb-3 font-display shadow-[0_6px_0_#cdbb98] transition-all duration-100 ${big ? "h-36 min-w-0 flex-1 text-[18px] sm:h-48 sm:text-[22px] lg:h-52 lg:w-24 lg:flex-none lg:text-[24px]" : "h-32 w-14 text-[20px]"} ${k.o === 0 ? "bg-[#FBF5E6] text-kajal" : "bg-[#F3E9D2] text-sepia"} ${isDown(k) ? "translate-y-1.5 bg-[#efe2c4] shadow-[0_2px_0_#cdbb98]" : "hover:bg-[#fffaf0]"}`}>
               {k.label}
               <span className="mt-1 font-sans text-[11px] text-sepia">{k.o > 0 ? "upper" : k.o < 0 ? "lower" : " "}</span>
             </button>

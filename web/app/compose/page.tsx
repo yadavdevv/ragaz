@@ -202,7 +202,7 @@ export default function Compose() {
 
             {/* the beat grid: one row per cycle of teentaal */}
             <div className="leaf-card border border-rule p-5">
-              <div className="grid grid-cols-4 gap-x-3 gap-y-3 sm:grid-cols-8 lg:grid-cols-[repeat(16,minmax(0,1fr))]">
+              <div className="grid grid-cols-8 gap-1.5 sm:gap-x-3 sm:gap-y-3 lg:grid-cols-[repeat(16,minmax(0,1fr))]">
                 {Array.from({ length: cells }, (_, i) => {
                   const t = beatOf(i);
                   const n = t ? parse(t === "-" ? "S" : t).notes[0] : null;
@@ -210,7 +210,7 @@ export default function Compose() {
                   const isHead = head !== null && Math.floor(head) === i;
                   return (
                     <button key={i} onClick={() => { tick("soft"); setCursor(i); }} data-cursor="Write here"
-                      className={`relative flex h-14 items-center justify-center rounded-xl border text-[15px] transition-all duration-200 ${isHead ? "scale-105 border-sindoor bg-sindoor text-paper" : i === cursor ? "border-sindoor text-kajal shadow-[0_0_0_3px_rgba(233,162,59,.18)]" : t ? "border-rule text-kajal" : "border-rule/60 text-rule"} ${wrong ? "!border-sindoor !text-sindoor" : ""} ${i % 4 === 0 ? "ml-0" : ""}`}>
+                      className={`relative flex h-11 items-center justify-center rounded-lg border text-[12px] transition-all duration-200 sm:h-14 sm:rounded-xl sm:text-[15px] ${isHead ? "scale-105 border-sindoor bg-sindoor text-paper" : i === cursor ? "border-sindoor text-kajal shadow-[0_0_0_3px_rgba(178,58,34,.18)]" : t ? "border-rule text-kajal" : "border-rule/60 text-rule"} ${wrong ? "!border-sindoor !text-sindoor" : ""} ${i % 4 === 0 ? "ml-0" : ""}`}>
                       {t ? (t === "-" ? "–" : `${NAMES[n!.s]}${n!.o > 0 ? "′" : n!.o < 0 ? "," : ""}`) : i % 16 === 0 ? <span className="text-[11px] text-sindoor/60">×</span> : ""}
                     </button>
                   );
@@ -225,20 +225,20 @@ export default function Compose() {
               <div className="relative mx-3 h-11 overflow-hidden rounded-t-md border-x-[3px] border-t-[3px] border-[#5E1F14] bg-paper2">
                 <div className="absolute inset-0 transition-transform duration-300 ease-out" style={{ transform: `scaleY(${pressed ? 0.78 : 1})`, transformOrigin: "bottom", backgroundImage: "repeating-linear-gradient(180deg, #F1E6CF 0 6px, #CDB690 6px 7px, #E8D8BA 7px 12px, #131A2B 12px 13px)" }} />
               </div>
-              <div className="flex flex-wrap items-end gap-[3px] rounded-md border-[10px] border-[#5E1F14] bg-[#5E1F14] p-1">
+              <div className="flex flex-wrap items-end gap-[3px] rounded-md border-[10px] border-[#5E1F14] bg-[#5E1F14] p-1 sm:flex-nowrap">
                 {keys.map((k) => {
                   const midIndex = keys.filter((x) => x.o >= 0).indexOf(k);
                   const on = pressed === `${k.s}${k.o}`;
                   return (
                     <button key={`${k.s}${k.o}`} data-cursor="Sing" onPointerDown={() => sing(k.s, k.o)}
-                      className={`relative flex flex-col items-center justify-end rounded-b-md border pb-3 shadow-[0_6px_0_#cdbb98] transition-all duration-100 ${k.o === 0 ? "h-40 w-[4.5rem] border-[#cdbb98] bg-[#FBF5E6] text-kajal" : "h-32 w-14 border-[#cdbb98] bg-[#F3E9D2] text-sepia"} ${on ? "translate-y-1.5 bg-[#efe2c4] shadow-[0_2px_0_#cdbb98]" : "hover:bg-[#fffaf0]"}`}>
-                      <span className="font-display text-[26px] leading-none">{NAMES[k.s]}</span>
+                      className={`relative flex flex-col items-center justify-end rounded-b-md border pb-3 shadow-[0_6px_0_#cdbb98] transition-all duration-100 ${k.o === 0 ? "h-32 w-[calc((100%-18px)/6)] border-[#cdbb98] bg-[#FBF5E6] text-kajal sm:h-40 sm:w-auto sm:min-w-0 sm:flex-1" : "h-28 w-[calc((100%-18px)/6)] border-[#cdbb98] bg-[#F3E9D2] text-sepia sm:h-32 sm:w-auto sm:min-w-0 sm:flex-1"} ${on ? "translate-y-1.5 bg-[#efe2c4] shadow-[0_2px_0_#cdbb98]" : "hover:bg-[#fffaf0]"}`}>
+                      <span className="font-display text-[19px] leading-none sm:text-[26px]">{NAMES[k.s]}</span>
                       <span className="mt-1 text-[11px] opacity-70">{k.o > 0 ? "upper" : k.o < 0 ? "lower" : "rgdn".includes(k.s) ? "komal" : k.s === "M" ? "tivra" : " "}</span>
                       {midIndex >= 0 && midIndex < KEYS.length && <span className="absolute left-2 top-2 font-mono text-[10px] uppercase opacity-50">{KEYS[midIndex]}</span>}
                     </button>
                   );
                 })}
-                <button onClick={() => { tick(); put("-"); }} data-cursor="Hold" className="h-32 w-20 rounded-b-md border border-[#cdbb98] bg-[#F3E9D2] font-display text-kajal shadow-[0_6px_0_#cdbb98] hover:bg-[#fffaf0]">hold<br /><span className="font-mono text-[11px]">–</span></button>
+                <button onClick={() => { tick(); put("-"); }} data-cursor="Hold" className="h-28 w-[calc((100%-18px)/6)] rounded-b-md border border-[#cdbb98] bg-[#F3E9D2] font-display text-kajal shadow-[0_6px_0_#cdbb98] hover:bg-[#fffaf0] sm:h-32 sm:w-auto sm:min-w-0 sm:flex-1">hold<br /><span className="font-mono text-[11px]">–</span></button>
               </div>
               <div className="mt-5 flex flex-wrap gap-3">
                 <Magnetic variant="solid" cursor={track && head !== null ? "Stop" : "Play"} onClick={() => (track ? (head !== null ? stop() : play(track)) : undefined)}>{head !== null ? "❚❚ Stop" : "▶ Play mine"}</Magnetic>

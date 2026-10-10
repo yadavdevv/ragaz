@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 html { background: #F1E6CF; }
+/* Responsive guards: grid and flex children may shrink below their content (long equations,
+   instruments and notation scroll inside their own boxes), and the page never scrolls sideways. */
+html, body { overflow-x: clip; max-width: 100%; }
+.grid > *, .flex > * { min-width: 0; }
+img, svg, canvas, video { max-width: 100%; }
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 body { color: #131A2B; -webkit-font-smoothing: antialiased; }

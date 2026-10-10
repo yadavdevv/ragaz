@@ -8,7 +8,7 @@ import { type Data, type Track, toggle, useSite } from "@/lib/site";
 
 function Card({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
   return (
-    <Reveal className="leaf-card relative flex h-full flex-col p-9 shadow-[0_24px_50px_-34px_rgba(19,26,43,.55)] transition-transform duration-500 hover:-translate-y-1">
+    <Reveal className="leaf-card relative flex h-full flex-col p-7 shadow sm:p-9-[0_24px_50px_-34px_rgba(19,26,43,.55)] transition-transform duration-500 hover:-translate-y-1">
       <span className="pointer-events-none absolute inset-[7px] border border-sindoor/50" />
       <span className="pointer-events-none absolute inset-[11px] border border-sona/40" />
       <div className="relative font-display text-[22px] text-sindoor">{n}</div>
@@ -29,8 +29,8 @@ function Flip({ from, to }: { from: number; to: number }) {
   }, []);
   return (
     <div ref={ref} className="flex items-baseline gap-4">
-      <span className={`font-display text-[60px] leading-none transition-all duration-700 ${flipped ? "text-kajal/30 line-through decoration-2" : "text-kajal"}`}>{from.toFixed(2)}</span>
-      <span className={`font-display text-[60px] leading-none text-sindoor transition-all duration-700 ${flipped ? "opacity-100" : "translate-x-4 opacity-0"}`}>{to.toFixed(2)}</span>
+      <span className={`font-display text-[clamp(44px,13vw,60px)] leading-none transition-all duration-700 ${flipped ? "text-kajal/30 line-through decoration-2" : "text-kajal"}`}>{from.toFixed(2)}</span>
+      <span className={`font-display text-[clamp(44px,13vw,60px)] leading-none text-sindoor transition-all duration-700 ${flipped ? "opacity-100" : "translate-x-4 opacity-0"}`}>{to.toFixed(2)}</span>
     </div>
   );
 }
@@ -92,7 +92,7 @@ export function Findings({ data }: { data: Data }) {
             <div className="mt-auto grid grid-cols-3 gap-3 pt-8">
               {[["rules only", v1, "text-kajal/35"], ["real singers", real, "text-kajal"], ["final model", v2, "text-sindoor"]].map(([l, v, c]) => (
                 <div key={l as string}>
-                  <div className={`font-display text-[50px] leading-none ${c}`}><CountUp to={v as number} suffix="%" /></div>
+                  <div className={`font-display text-[clamp(30px,9vw,50px)] leading-none ${c}`}><CountUp to={v as number} suffix="%" /></div>
                   <div className="mt-1 font-sans text-[12.5px] text-sepia">{l} · time on Sa</div>
                 </div>
               ))}

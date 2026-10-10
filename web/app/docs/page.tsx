@@ -45,7 +45,7 @@ export default function Docs() {
             <article id="reward">
               <h2 className="font-display text-[56px] leading-none text-kajal">The reward</h2>
               <p className="mt-6">One function scores every piece, between 0 and 1. The first five terms are hard rules and they multiply, so a single broken rule sinks the whole score. The model found a way to cheat every rule that was merely added. The last four are style, measured against real recordings.</p>
-              <div className="mt-6 overflow-x-auto rounded-2xl border border-rule bg-paper p-6 text-kajal" dangerouslySetInnerHTML={{ __html: eq }} />
+              <div className="no-scrollbar relative mt-6 overflow-x-auto rounded-2xl border border-rule bg-paper p-4 text-kajal sm:p-6 [&_.katex]:text-[0.72em] sm:[&_.katex]:text-[1.08em]" dangerouslySetInnerHTML={{ __html: eq }} />
               <ul className="mt-6 space-y-2 text-[16px]">
                 {[["format", "share of tokens that are valid notation (squared)"], ["allowed", "share of notes that belong to the raga"], ["beats", "share of bars with exactly four beats"], ["variety", "penalises repeated bars, long runs of one note, too many holds"], ["length", "eight bars, two cycles of teentaal"], ["tala", "whole cycles, and an ending on Sa or a resting note"], ["profile", "time on each note vs real singers (calibrated Jensen–Shannon distance)"], ["motion", "sizes of melodic steps vs real singers"], ["phrases", "4-note figures mined from real concerts of the raga"]].map(([k, d]) => (
                   <li key={k} className="grid grid-cols-[7rem_1fr] gap-4 border-t border-rule pt-2"><code className="text-kajal">{k}</code><span>{d}</span></li>

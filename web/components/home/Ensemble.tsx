@@ -14,9 +14,9 @@ export function Ensemble() {
           <h2 className="mt-6 max-w-[18ch] font-display text-[clamp(46px,6.4vw,104px)] leading-[0.95] text-kajal">A melody never <span className="italic text-sindoor">sings alone.</span></h2>
         </Reveal>
         <div className="mt-10 grid items-center gap-16 lg:grid-cols-[0.8fr_1.2fr]">
-          <div className="grid grid-cols-[minmax(0,210px)_1fr] items-end gap-8">
-            <Tanpura className="h-[min(78svh,640px)] w-full" />
-            <div className="pb-10">
+          <div className="grid items-end gap-6 sm:grid-cols-[minmax(0,210px)_1fr] sm:gap-8">
+            <Tanpura className="mx-auto h-[min(62svh,520px)] w-[min(55vw,200px)] sm:h-[min(78svh,640px)] sm:w-full" />
+            <div className="sm:pb-10">
               <div className="font-display text-[44px] leading-none text-kajal">Tanpura</div>
               <div className="mt-1 font-display text-[24px] text-sepia">तानपूरा</div>
               <p className="mt-5 text-[18px] leading-[1.6] text-sepia">Four strings, plucked in turn forever: Pa, Sa, Sa, low Sa. It plays no melody; it is the ground every note is heard against.</p>

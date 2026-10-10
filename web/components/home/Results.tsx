@@ -37,7 +37,7 @@ export function Results({ data }: { data: Data }) {
           <Reveal><h3 className="font-display text-[44px] leading-none text-kajal">What it can't do yet</h3></Reveal>
           <div className="divide-y divide-rule border-y border-rule">
             {[["Ornaments", "Glides and shakes between notes (meend, gamak) can't be written in its notation."], ["Alap", "The slow, unmetered opening of a real performance."], ["A real voice", "You hear a synthesised voice over a tanpura, not a singer."], ["A musician's verdict", "It's measured against recordings, not yet judged by an expert's ear."]].map(([t, d]) => (
-              <Reveal key={t} className="grid grid-cols-[12rem_1fr] gap-6 py-5 text-[18px]"><span className="font-display text-[22px] text-kajal">{t}</span><span className="text-sepia">{d}</span></Reveal>
+              <Reveal key={t} className="grid gap-1 py-5 text-[18px] sm:grid-cols-[12rem_1fr] sm:gap-6"><span className="font-display text-[22px] text-kajal">{t}</span><span className="text-sepia">{d}</span></Reveal>
             ))}
           </div>
         </div>

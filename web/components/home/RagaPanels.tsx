@@ -93,14 +93,14 @@ export function RagaPanels({ data }: { data: Data }) {
             <div key={r.key} className={`relative flex min-h-[100svh] w-full flex-col justify-between gap-10 px-6 pb-28 pt-28 sm:px-12 lg:h-[100svh] lg:w-screen ${tone.bg} ${tone.fg}`}>
               <span className={`pointer-events-none absolute inset-4 border ${i === 2 ? "border-sona/50" : "border-sindoor/40"}`} />
               <span className={`pointer-events-none absolute inset-[22px] border ${i === 2 ? "border-paper/10" : "border-kajal/10"}`} />
-              <div className="flex items-start justify-between gap-10">
+              <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:gap-10">
                 <div>
                   <div className={`flex items-center gap-3 font-sans text-[12px] uppercase tracking-[0.24em] ${tone.sub}`}><Folio n={5} /> Raga {i + 1} of 3 · {r.time.split(" (")[0]}</div>
                   <h2 className="mt-3 font-display text-[clamp(72px,10.5vw,180px)] leading-[0.86]">{r.name}</h2>
                   <div className={`mt-3 font-deva text-[clamp(28px,3.2vw,46px)] ${tone.sub}`}>{r.devanagari}</div>
                   <p className={`mt-6 hidden max-w-[34ch] text-[19px] leading-[1.55] lg:block ${tone.sub}`}>{BLURB[r.key]}</p>
                 </div>
-                <Plate p={PAINTINGS[r.key]} tone={tone.plate} className={`hidden w-[min(19vw,270px)] shrink-0 lg:block ${i % 2 ? "rotate-[1.5deg]" : "-rotate-[1.5deg]"}`} />
+                <Plate p={PAINTINGS[r.key]} tone={tone.plate} caption={false} className={`order-first w-[34vw] max-w-[150px] shrink-0 self-end sm:order-none sm:self-auto lg:w-[min(19vw,270px)] lg:max-w-none ${i % 2 ? "rotate-[1.5deg]" : "-rotate-[1.5deg]"}`} />
               </div>
               <div className="grid items-end gap-10 lg:grid-cols-[1fr_1.1fr]">
                 <div>

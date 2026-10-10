@@ -26,9 +26,16 @@ export function HowItWorks({ data }: { data: Data }) {
   const piece = useMemo(() => [...data.pieces].filter((x) => x.model === "v2" && x.raga === "bhupali").sort((a, b) => b.reward - a.reward)[1], [data]);
   const group = useMemo(() => data.pieces.filter((x) => x.model === "v2" && x.raga === "bhupali").slice(0, 8).map((x) => x.reward), [data]);
 
+  const [wide, setWide] = useState(true);
   useEffect(() => {
-    const st = ScrollTrigger.create({ trigger: wrap.current, start: "top top", end: "+=360%", pin: true, scrub: true, onUpdate: (s) => setP(s.progress) });
-    return () => st.kill();
+    const mm = gsap.matchMedia();
+    mm.add("(min-width: 1024px)", () => {
+      setWide(true);
+      const st = ScrollTrigger.create({ trigger: wrap.current, start: "top top", end: "+=360%", pin: true, scrub: true, onUpdate: (s) => setP(s.progress) });
+      return () => st.kill();
+    });
+    mm.add("(max-width: 1023px)", () => setWide(false));
+    return () => mm.revert();
   }, []);
 
   const step = Math.min(4, Math.floor(p * 5));
@@ -52,18 +59,18 @@ export function HowItWorks({ data }: { data: Data }) {
   }, [p]);
 
   return (
-    <section id="how" ref={wrap} className="wasli relative h-[100svh] overflow-hidden">
-      <div className="relative mx-auto grid h-full max-w-[1400px] items-center gap-10 px-6 pt-20 sm:px-10 lg:grid-cols-[0.9fr_1.1fr]">
+    <section id="how" ref={wrap} className="wasli relative overflow-hidden lg:h-[100svh]">
+      <div className="relative mx-auto grid h-full max-w-[1400px] items-center gap-10 px-6 py-24 sm:px-10 lg:grid-cols-[0.9fr_1.1fr] lg:py-0 lg:pt-20">
         <div>
           <div className="flex items-center gap-4"><Folio n={6} /><Rubric>How it learned</Rubric></div>
           <h2 className="mt-6 font-display text-[clamp(42px,5.6vw,88px)] leading-[0.95] text-kajal">Write. Get scored.<br /><span className="italic text-sindoor">Do it again.</span></h2>
           <ol className="mt-10">
             {STEPS.map((s, i) => (
-              <li key={s.t} className={`grid grid-cols-[3rem_1fr] items-baseline border-t border-rule py-4 transition-all duration-500 ${i === step ? "opacity-100" : "opacity-40"}`}>
-                <span className={`font-display text-[20px] ${i === step ? "text-sindoor" : "text-sepia"}`}>{"१२३४५"[i]}</span>
+              <li key={s.t} className={`grid grid-cols-[3rem_1fr] items-baseline border-t border-rule py-4 transition-all duration-500 ${i === step || !wide ? "opacity-100" : "opacity-40"}`}>
+                <span className={`font-display text-[20px] ${i === step || !wide ? "text-sindoor" : "text-sepia"}`}>{"१२३४५"[i]}</span>
                 <div>
                   <div className="font-display text-[28px] leading-none text-kajal">{s.t}</div>
-                  <div className={`overflow-hidden text-[17px] leading-[1.55] text-sepia transition-all duration-700 ease-out ${i === step ? "mt-2 max-h-40 opacity-100" : "max-h-0 opacity-0"}`}>{s.d}</div>
+                  <div className={`overflow-hidden text-[17px] leading-[1.55] text-sepia transition-all duration-700 ease-out ${i === step || !wide ? "mt-2 max-h-40 opacity-100" : "max-h-0 opacity-0"}`}>{s.d}</div>
                 </div>
               </li>
             ))}
@@ -147,7 +154,7 @@ export function HowItWorks({ data }: { data: Data }) {
           </Hashiya>
         </div>
       </div>
-      <div className="absolute inset-x-0 bottom-0 h-1 bg-rule"><div className="h-full bg-sindoor" style={{ width: `${p * 100}%` }} /></div>
+      <div className="absolute inset-x-0 bottom-0 hidden h-1 bg-rule lg:block"><div className="h-full bg-sindoor" style={{ width: `${p * 100}%` }} /></div>
     </section>
   );
 }

@@ -71,55 +71,55 @@ export function Player() {
           <button data-cursor={playing ? "Pause" : "Play"} onClick={() => { tick(); playing ? stop() : play(track); }} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sindoor text-paper transition-transform duration-300 hover:scale-105">
             {playing ? <span className="text-[13px]">❚❚</span> : <span className="ml-0.5 text-[14px]">▶</span>}
           </button>
-          <div className="min-w-0 shrink-0">
+          <div className="min-w-0 flex-1 sm:flex-none sm:shrink-0">
             <div className="truncate font-display text-[17px] text-kajal">{track.title}</div>
             <div className="text-[12px] tabular-nums text-sepia">{fmt(elapsed)} / {fmt(total)}</div>
           </div>
-          <div className="min-w-0 flex-1 text-kajal"><Line notes={track.notes} trackId={track.id} aspect={14} width={1.5} glow={false} draw={false} color="ink" base="ink" /></div>
-          <button data-cursor="Open" onClick={() => { tick(); useSite.getState().set({ open: true }); }} className="text-[13px] text-sepia transition-colors hover:text-sindoor">Full screen ↗</button>
+          <div className="hidden min-w-0 flex-1 text-kajal sm:block"><Line notes={track.notes} trackId={track.id} aspect={14} width={1.5} glow={false} draw={false} color="ink" base="ink" /></div>
+          <button data-cursor="Open" onClick={() => { tick(); useSite.getState().set({ open: true }); }} className="shrink-0 text-[13px] text-sepia transition-colors hover:text-sindoor">Full screen ↗</button>
         </div>
       </div>
 
       {/* full screen */}
       <div className={`night-sky fixed inset-0 z-[80] flex flex-col font-sans text-paper transition-[opacity,clip-path] duration-[900ms] ease-out ${open ? "opacity-100 [clip-path:circle(150%_at_50%_95%)]" : "pointer-events-none opacity-0 [clip-path:circle(0%_at_50%_95%)]"}`}>
         <div className="pointer-events-none absolute inset-0 transition-[background] duration-300" style={{ background: `radial-gradient(60% 50% at ${cur ? 20 + (cur.t / (track.notes[track.notes.length - 1].t + 1)) * 60 : 50}% ${cur ? 70 - ((semis(cur) + 12) / 36) * 60 : 50}%, rgba(217,112,90,${cur ? 0.14 : 0.05}), transparent 70%)` }} />
-        <div className="relative flex items-start justify-between px-6 pt-6 sm:px-10 sm:pt-8">
+        <div className="relative flex items-start justify-between gap-4 px-5 pt-6 sm:px-10 sm:pt-8">
           <div>
             <div className="text-[12px] uppercase tracking-[0.2em] text-gulal">Now playing</div>
             <div className="mt-1 font-display text-[40px] leading-none text-paper sm:text-[56px]">{track.title}</div>
             <div className="mt-2 text-[15px] text-paper/65">{track.sub}</div>
           </div>
-          <button data-cursor="Close" onClick={() => { tick(); useSite.getState().set({ open: false }); }} className="rounded-full border border-paper/30 px-5 py-2.5 text-[14px] text-paper transition-colors hover:border-gulal hover:text-gulal">Close · Esc</button>
+          <button data-cursor="Close" onClick={() => { tick(); useSite.getState().set({ open: false }); }} className="shrink-0 rounded-full border border-paper/30 px-4 py-2 text-[14px] text-paper transition-colors hover:border-gulal hover:text-gulal sm:px-5 sm:py-2.5">Close<span className="hidden sm:inline"> · Esc</span></button>
         </div>
 
         <div className="relative flex flex-1 items-center justify-center">
           <div key={curIndex} className="note-pop pointer-events-none absolute left-1/2 top-[8%] -translate-x-1/2 text-center">
             {cur && (
               <>
-                <div className="font-display text-[120px] leading-none text-gulal sm:text-[170px]">{NAMES[cur.s]}</div>
-                <div className="text-[15px] tracking-[0.2em] text-paper/60">{QUAL[cur.s] ? `${QUAL[cur.s]} · ` : ""}{cur.o > 0 ? "upper octave" : cur.o < 0 ? "lower octave" : "middle octave"}</div>
+                <div className={`font-display leading-none text-gulal ${view === "notation" ? "text-[56px]" : "text-[88px]"} sm:text-[170px]`}>{NAMES[cur.s]}</div>
+                <div className={`text-[15px] tracking-[0.2em] text-paper/60 ${view === "notation" ? "hidden sm:block" : ""}`}>{QUAL[cur.s] ? `${QUAL[cur.s]} · ` : ""}{cur.o > 0 ? "upper octave" : cur.o < 0 ? "lower octave" : "middle octave"}</div>
               </>
             )}
           </div>
           {view === "line" ? (
-            <div className="w-full px-6 pt-40 text-paper sm:px-10">
+            <div className="w-full px-4 pt-32 text-paper sm:px-10 sm:pt-40">
               <Line notes={track.notes} trackId={track.id} aspect={4.2} width={2.5} axis={raga?.swaras} color="gulal" base="paper" draw={false} />
             </div>
           ) : (
-            <div className="wasli mx-6 mt-44 w-full max-w-5xl p-6 shadow-2xl sm:mx-10">
+            <div className="wasli mx-3 mt-36 max-h-[52svh] w-full max-w-5xl overflow-y-auto p-3 shadow-2xl sm:mx-10 sm:mt-44 sm:p-6">
               <Bhatkhande notes={track.notes} beats={Math.ceil(track.notes[track.notes.length - 1].t + track.notes[track.notes.length - 1].d)} head={head} />
             </div>
           )}
         </div>
 
-        <div className="relative flex flex-wrap items-center justify-between gap-4 px-6 pb-8 sm:px-10">
+        <div className="relative flex flex-wrap items-center justify-between gap-4 px-5 pb-6 sm:px-10 sm:pb-8">
           <div className="flex items-center gap-3">
             <button data-cursor={playing ? "Pause" : "Play"} onClick={() => { tick(); playing ? stop() : play(track); }} className="flex h-16 w-16 items-center justify-center rounded-full bg-gulal text-kajal transition-transform duration-300 hover:scale-105">
               {playing ? "❚❚" : <span className="ml-1 text-[20px]">▶</span>}
             </button>
             {queue.length > 1 && <button data-cursor="Next" onClick={() => { tick(); next(); }} className="rounded-full border border-paper/30 px-5 py-3 text-[14px] text-paper hover:border-gulal">Next ⏭</button>}
           </div>
-          <div className="flex flex-wrap items-center gap-6 text-[14px] text-paper/65">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[14px] text-paper/65">
             <div className="flex rounded-full border border-paper/25 p-1">
               {(["line", "notation"] as const).map((v) => (
                 <button key={v} onClick={() => { tick("soft"); setView(v); }} className={`rounded-full px-4 py-1.5 transition ${view === v ? "bg-paper text-kajal" : "hover:text-paper"}`}>{v === "line" ? "Line" : "Notation"}</button>

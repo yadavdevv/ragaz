@@ -1,9 +1,11 @@
 "use client";
 
-// A piece printed the way Bhatkhande's books print a bandish: one row per cycle of
-// teentaal, Devanagari swaras, ऽ for a held beat, dots for lower/upper octave, a line
-// under komal notes and a stroke over tivra Ma, and the tala signs × २ ० ३ beneath.
+// A piece printed the way Bhatkhande's books print a bandish: Devanagari swaras, ऽ for a
+// held beat, dots for lower/upper octave, a line under komal notes and a stroke over tivra
+// Ma, the tabla's theka above and the tala signs × २ ० ३ below. One cycle (16 beats) per
+// line on wide screens; half a cycle per line on phones.
 
+import { Fragment, useEffect, useState } from "react";
 import type { Note } from "@/lib/music";
 
 const DEVA: Record<string, string> = { S: "सा", r: "रे", R: "रे", g: "ग", G: "ग", m: "म", M: "म", P: "प", d: "ध", D: "ध", n: "नि", N: "नि" };
@@ -21,30 +23,43 @@ function Swar({ n }: { n: Note }) {
   );
 }
 
+function usePerRow() {
+  const [per, setPer] = useState(16);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const f = () => setPer(mq.matches ? 8 : 16);
+    f();
+    mq.addEventListener("change", f);
+    return () => mq.removeEventListener("change", f);
+  }, []);
+  return per;
+}
+
 export function Bhatkhande({ notes, beats, head = null, theka = true, className = "" }: { notes: Note[]; beats: number; head?: number | null; theka?: boolean; className?: string }) {
+  const per = usePerRow();
   const cells: Note[][] = Array.from({ length: beats }, () => []);
   for (const n of notes) cells[Math.floor(n.t + 1e-6)]?.push(n);
-  const rows = Array.from({ length: Math.ceil(beats / 16) }, (_, r) => r);
+  const rows = Array.from({ length: Math.ceil(beats / per) }, (_, r) => r * per);
   const cur = head === null ? -1 : Math.floor(head);
+  const div = (k: number) => (k % 4 === 0 && k ? "border-l border-kajal/25" : "");
   return (
     <div className={`font-deva text-kajal ${className}`}>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[620px] border-collapse text-center">
-          <tbody>
-            {theka && (
-              <tr className="text-[13px] text-kajal/45">
-                {THEKA.map((b, i) => <td key={i} className={`pb-2 ${i % 4 === 0 && i ? "border-l border-kajal/25" : ""}`}>{b}</td>)}
-              </tr>
-            )}
-            {rows.map((r) => (
-              <tr key={r} className="border-t border-kajal/15">
-                {Array.from({ length: 16 }, (_, k) => {
-                  const b = r * 16 + k;
-                  if (b >= beats) return <td key={k} />;
+      <table className="w-full table-fixed border-collapse text-center">
+        <tbody>
+          {rows.map((start, ri) => (
+            <Fragment key={start}>
+              {(theka && (per === 8 || ri === 0)) && (
+                <tr className="text-[12px] text-kajal/45 sm:text-[13px]">
+                  {Array.from({ length: per }, (_, k) => <td key={k} className={`pb-1 pt-2 ${div(k)}`}>{THEKA[(start + k) % 16]}</td>)}
+                </tr>
+              )}
+              <tr className="border-t border-kajal/15">
+                {Array.from({ length: per }, (_, k) => {
+                  const b = start + k;
+                  if (b >= beats) return <td key={k} className={div(k)} />;
                   const ns = cells[b];
-                  const on = b === cur;
                   return (
-                    <td key={k} className={`h-14 text-[22px] transition-colors duration-200 ${k % 4 === 0 && k ? "border-l border-kajal/25" : ""} ${on ? "bg-gulal/60" : ""}`}>
+                    <td key={k} className={`h-12 text-[19px] transition-colors duration-200 sm:h-14 sm:text-[22px] ${div(k)} ${b === cur ? "bg-gulal/60" : ""}`}>
                       {ns.length === 0 ? <span className="text-kajal/50">ऽ</span> : ns.length === 1 ? <Swar n={ns[0]} /> : (
                         <span className="inline-flex flex-col items-center">
                           <span className="text-[0.8em]">{ns.map((n, i) => <Swar key={i} n={n} />)}</span>
@@ -55,13 +70,15 @@ export function Bhatkhande({ notes, beats, head = null, theka = true, className 
                   );
                 })}
               </tr>
-            ))}
-            <tr className="text-[14px] text-sindoor">
-              {Array.from({ length: 16 }, (_, k) => <td key={k} className={`pt-2 ${k % 4 === 0 && k ? "border-l border-kajal/25" : ""}`}>{SIGNS[k] ?? ""}</td>)}
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              {(per === 8 || ri === rows.length - 1) && (
+                <tr className="text-[13px] text-sindoor">
+                  {Array.from({ length: per }, (_, k) => <td key={k} className={`pb-2 pt-1 ${div(k)}`}>{SIGNS[(start + k) % 16] ?? ""}</td>)}
+                </tr>
+              )}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
