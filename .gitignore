@@ -1,0 +1,19 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Training outputs and downloaded datasets (root only; web/public/data is the site's data and IS tracked)
+/out/
+*.wav
+/runs/
+/logs/
+/data/
+/reports/
+.DS_Store
