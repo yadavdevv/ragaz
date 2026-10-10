@@ -1,25 +1,31 @@
 import type { Config } from "tailwindcss";
 
+// The pothi palette: paper, one blue-black ink, two reds, and gold for hairlines only.
 export default {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        night: "#0B0907", // warm black
-        coal: "#15110D", // raised night
-        smoke: "#2A231C", // night hairline
-        paper: "#F3EBDD", // warm cream
-        sand: "#E6DAC6", // raised paper / paper hairline
-        ink: "#1A1410", // text on paper
-        ivory: "#F4EDE1", // text on night
-        mute: "#9C9182", // secondary text, both
-        saffron: "#F0A33A", // the model, the accent
-        ember: "#D9622B", // rare second accent (hover, wrong notes)
+        // paper family
+        paper: "#F1E6CF", // wasli
+        paper2: "#E8D8BA", // deeper paper for bands
+        leaf: "#F8F0DF", // lighter leaf, for cards
+        rule: "#CDB690", // hairlines on paper
+        // ink family: one black, infused with blue
+        kajal: "#131A2B", // ink and the night
+        kajal2: "#1F2840", // the night's lighter edge
+        sepia: "#4A5166", // secondary ink
+        // reds
+        sindoor: "#B23A22", // deep vermilion: accent, rubrics, buttons
+        gulal: "#D9705A", // light red: the model's voice, highlights
+        // ornament only
+        sona: "#A8853C", // gold-leaf hairlines
       },
       fontFamily: {
         display: ["var(--font-display)", "serif"],
+        serif: ["var(--font-serif)", "Georgia", "serif"],
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        deva: ["var(--font-deva)", "serif"],
+        deva: ["var(--font-display)", "serif"],
         mono: ["ui-monospace", "SFMono-Regular", "monospace"],
       },
       transitionTimingFunction: { out: "cubic-bezier(.16,1,.3,1)" },

@@ -8,6 +8,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getEngine } from "@/lib/audio";
 import { Line } from "@/components/Line";
 import { Magnetic } from "@/components/Magnetic";
+import { Folio } from "@/components/Ornament";
+import { Plate } from "@/components/Plate";
+import { PAINTINGS } from "@/lib/art";
 import { type Raga, SWARAS } from "@/lib/music";
 import { type Data, type Track, toggle, useSite } from "@/lib/site";
 import { parse } from "@/lib/verify";
@@ -19,9 +22,9 @@ const BLURB: Record<string, string> = {
   malkauns: "Flat Ga, Dha and Ni, and no Re or Pa at all. Deep, slow, meditative: a raga for after midnight.",
 };
 const TONES = [
-  { bg: "bg-paper", fg: "text-ink", sub: "text-ink/55", line: "ink" as const, tile: "border-ink/15", on: "bg-ink text-paper border-ink", btn: "ink" as const },
-  { bg: "bg-night", fg: "text-ivory", sub: "text-mute", line: "saffron" as const, tile: "border-smoke", on: "bg-saffron text-night border-saffron", btn: "line" as const },
-  { bg: "bg-saffron", fg: "text-night", sub: "text-night/60", line: "ink" as const, tile: "border-night/20", on: "bg-night text-saffron border-night", btn: "dark" as const },
+  { bg: "wasli", fg: "text-kajal", sub: "text-sepia", line: "ink" as const, tile: "border-kajal/15", on: "bg-kajal text-paper border-kajal", btn: "ink" as const, plate: "paper" as const },
+  { bg: "bg-gulal", fg: "text-kajal", sub: "text-kajal/70", line: "ink" as const, tile: "border-kajal/20", on: "bg-kajal text-paper border-kajal", btn: "dark" as const, plate: "gulal" as const },
+  { bg: "night-sky", fg: "text-paper", sub: "text-paper/65", line: "gulal" as const, tile: "border-paper/20", on: "bg-gulal text-kajal border-gulal", btn: "night" as const, plate: "night" as const },
 ];
 
 function NoteTiles({ raga, tone }: { raga: Raga; tone: (typeof TONES)[number] }) {
@@ -50,7 +53,7 @@ function NoteTiles({ raga, tone }: { raga: Raga; tone: (typeof TONES)[number] })
           <button key={pc} data-cursor={ok ? "Sing" : "Not allowed"} onClick={() => hit(pc)}
             className={`flex h-[4.5rem] flex-col items-center justify-end rounded-2xl border pb-3 transition-all duration-300 ease-out ${ok ? tone.on : `${tone.tile} opacity-40`} ${lit === pc ? "-translate-y-2 scale-105" : ""}`}
             style={{ animation: shake === pc ? "shake .4s" : undefined }}>
-            <span className="text-[16px] font-medium">{NAMES[s]}</span>
+            <span className="font-display text-[19px]">{NAMES[s]}</span>
             <span className="text-[10px] opacity-70">{"rgdn".includes(s) ? "komal" : s === "M" ? "tivra" : " "}</span>
           </button>
         );
@@ -87,28 +90,31 @@ export function RagaPanels({ data }: { data: Data }) {
           const tone = TONES[i];
           const active = current === pakads[i].id;
           return (
-            <div key={r.key} className={`relative flex min-h-[100svh] w-full flex-col justify-between gap-10 px-6 pb-28 pt-24 sm:px-12 lg:h-[100svh] lg:w-screen ${tone.bg} ${tone.fg}`}>
-              <div className="flex items-start justify-between gap-6">
+            <div key={r.key} className={`relative flex min-h-[100svh] w-full flex-col justify-between gap-10 px-6 pb-28 pt-28 sm:px-12 lg:h-[100svh] lg:w-screen ${tone.bg} ${tone.fg}`}>
+              <span className={`pointer-events-none absolute inset-4 border ${i === 2 ? "border-sona/50" : "border-sindoor/40"}`} />
+              <span className={`pointer-events-none absolute inset-[22px] border ${i === 2 ? "border-paper/10" : "border-kajal/10"}`} />
+              <div className="flex items-start justify-between gap-10">
                 <div>
-                  <div className={`text-[12px] uppercase tracking-[0.24em] ${tone.sub}`}>Raga {i + 1} of 3 · {r.time.split(" (")[0]}</div>
-                  <h2 className="mt-3 font-display text-[clamp(72px,12vw,210px)] leading-[0.82]">{r.name}</h2>
-                  <div className={`mt-3 font-deva text-[clamp(26px,3vw,40px)] ${tone.sub}`}>{r.devanagari}</div>
+                  <div className={`flex items-center gap-3 font-sans text-[12px] uppercase tracking-[0.24em] ${tone.sub}`}><Folio n={5} /> Raga {i + 1} of 3 · {r.time.split(" (")[0]}</div>
+                  <h2 className="mt-3 font-display text-[clamp(72px,10.5vw,180px)] leading-[0.86]">{r.name}</h2>
+                  <div className={`mt-3 font-deva text-[clamp(28px,3.2vw,46px)] ${tone.sub}`}>{r.devanagari}</div>
+                  <p className={`mt-6 hidden max-w-[34ch] text-[19px] leading-[1.55] lg:block ${tone.sub}`}>{BLURB[r.key]}</p>
                 </div>
-                <p className={`hidden max-w-[30ch] pt-6 text-[19px] leading-[1.55] lg:block ${tone.sub}`}>{BLURB[r.key]}</p>
+                <Plate p={PAINTINGS[r.key]} tone={tone.plate} className={`hidden w-[min(19vw,270px)] shrink-0 lg:block ${i % 2 ? "rotate-[1.5deg]" : "-rotate-[1.5deg]"}`} />
               </div>
               <div className="grid items-end gap-10 lg:grid-cols-[1fr_1.1fr]">
                 <div>
-                  <div className={`mb-3 text-[13px] uppercase tracking-[0.2em] ${tone.sub}`}>Tap the notes · {r.notes.length} of 12 allowed</div>
+                  <div className={`mb-3 font-sans text-[13px] uppercase tracking-[0.2em] ${tone.sub}`}>Tap the notes · {r.notes.length} of 12 allowed</div>
                   <NoteTiles raga={r} tone={tone} />
                   <p className={`mt-4 text-[16px] lg:hidden ${tone.sub}`}>{BLURB[r.key]}</p>
                 </div>
                 <div>
-                  <div className={`mb-3 flex items-center justify-between text-[13px] uppercase tracking-[0.2em] ${tone.sub}`}>
+                  <div className={`mb-3 flex items-center justify-between font-sans text-[13px] uppercase tracking-[0.2em] ${tone.sub}`}>
                     <span>Its signature phrase</span>
                     <button data-cursor="Play" onClick={() => toggle(pakads[i])} className="normal-case tracking-normal underline-offset-4 hover:underline">{active ? "Stop" : "▶ Play it"}</button>
                   </div>
                   <button data-cursor="Play" onClick={() => toggle(pakads[i])} className="block w-full">
-                    <Line notes={pakads[i].notes} trackId={pakads[i].id} aspect={3.2} width={2.6} color={tone.line} base={tone.line} glow={tone.line === "saffron"} axis={r.swaras} />
+                    <Line notes={pakads[i].notes} trackId={pakads[i].id} aspect={3.2} width={2.6} color={tone.line} base={tone.line} glow={tone.line === "gulal"} axis={r.swaras} />
                   </button>
                   <div className="mt-6"><Magnetic href={`/ragas/${r.key}`} variant={tone.btn} cursor="Open">Everything about {r.name} →</Magnetic></div>
                 </div>

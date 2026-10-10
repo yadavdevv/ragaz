@@ -199,9 +199,83 @@ def arena(ragas: dict) -> list[dict]:
     return out
 
 
-def main() -> None:
-    ragas = load_ragas()
+def voices(ragas: dict, seconds: float = 10.0, hop: float = 0.02) -> list[dict]:
+    """A real singer's pitch curve per raga: the most melodic 10 s of a training recording.
+
+    From CompMusic predominant-pitch features (no audio). Cents above the singer's tonic,
+    resampled to 20 ms; unvoiced frames are None. The site resynthesises these with a voice.
+    """
+    import numpy as np
+
+    from ragaz.transcribe import load_pitch, load_tonic
+
     profiles = load_profiles()
+    feats = Path("data/external/compmusic/features")
+    out = []
+    for key, raga in ragas.items():
+        best = None
+        allowed = {SWARAS.index(sw) for sw in raga.notes}
+        for name in profiles["split"][key]["train"]:
+            pitch = feats / key / f"{name}.pitch"
+            if not pitch.exists():
+                continue
+            times, hz = load_pitch(pitch)
+            tonic = load_tonic(pitch.with_suffix(".tonicFine"))
+            step = float(np.median(np.diff(times)))
+            n = int(seconds / step)
+            cents = np.where(hz > 0, 1200 * np.log2(np.maximum(hz, 1e-9) / tonic), np.nan)
+            for a in range(0, len(cents) - n, int(2 / step)):
+                w = cents[a : a + n]
+                v = ~np.isnan(w)
+                voiced = v.mean()
+                if voiced < 0.8:
+                    continue
+                cw = w[v]
+                if cw.min() < -1000 or cw.max() > 1700:
+                    continue
+                # pitch-tracker octave errors: jumps of 6+ semitones between neighbouring voiced
+                # frames (also across short silences) are rejected
+                idx = np.flatnonzero(v)
+                gaps = np.diff(idx) * step
+                leaps = np.abs(np.diff(cw))
+                if np.any((leaps > 600) & (gaps < 0.4)):
+                    continue
+                pcs = np.round(cw / 100).astype(int)
+                in_raga = np.isin(pcs % 12, list(allowed)).mean()
+                distinct = len({p for p in pcs if (pcs == p).mean() > 0.03})
+                # phrase activity: how often the voice moves between stable notes (runs of ≥ 80 ms
+                # on one semitone), and no single hold longer than 2.5 s
+                runs, cur, n = [], pcs[0], 0
+                for p_ in pcs:
+                    if p_ == cur:
+                        n += 1
+                    else:
+                        runs.append((cur, n))
+                        cur, n = p_, 1
+                runs.append((cur, n))
+                stable = [r for r, k in runs if k * step >= 0.08]
+                changes = sum(1 for a_, b_ in zip(stable, stable[1:]) if a_ != b_)
+                longest = max(k for _, k in runs) * step
+                score = voiced * in_raga ** 4 * min(1.0, distinct / 6) * min(1.0, changes / 14) * (1.0 if longest <= 2.5 else 2.5 / longest)
+                if best is None or score > best[0]:
+                    best = (score, name, a * step, w, step)
+        if not best:
+            continue
+        _, name, start, w, step = best
+        k = int(hop / step)
+        res = [w[i : i + k] for i in range(0, len(w) - k + 1, k)]
+        curve = [None if np.isnan(seg).mean() > 0.5 else round(float(np.nanmedian(seg)), 1) for seg in res]
+        title = " ".join(name.split("_")[:-1]).replace(" - ", ", ").strip()
+        out.append({"raga": key, "recording": name, "title": title, "start": round(start, 2), "hop": hop, "cents": curve,
+                    "source": "CompMusic Indian Art Music Raga Recognition Dataset (features), Gulati et al., CC BY 4.0"})
+        print(f"voice {key:<9} {title[:50]:<50} @ {start:7.1f}s")
+    return out
+
+
+def main() -> None:
+    profiles = load_profiles()
+    # The site covers the ragas that have real-singer profiles (Deshkar has none yet).
+    ragas = {k: r for k, r in load_ragas().items() if k in profiles["ragas"]}
     OUT.mkdir(parents=True, exist_ok=True)
 
     pieces = []
@@ -243,6 +317,7 @@ def main() -> None:
     (OUT / "exhibits.json").write_text(json.dumps(exhibits(ragas), ensure_ascii=False, indent=1))
     (OUT / "journey.json").write_text(json.dumps(journey()))
     (OUT / "arena.json").write_text(json.dumps(arena(ragas)))
+    (OUT / "voices.json").write_text(json.dumps(voices(ragas)))
     (OUT / "ragas.json").write_text(json.dumps({"ragas": [raga_entry(r) for r in ragas.values()], **meta}, ensure_ascii=False, indent=1))
     (OUT / "pieces.json").write_text(json.dumps(pieces, ensure_ascii=False))
     (OUT / "masters.json").write_text(json.dumps(masters, ensure_ascii=False, indent=1))

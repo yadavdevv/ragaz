@@ -139,25 +139,25 @@ export function Ridgeline({ tracks, onHover }: { tracks: Track[]; onHover?: (t: 
         g.lineTo(right + 30, H);
         g.lineTo(left - 30, H);
         g.closePath();
-        g.fillStyle = "#0B0907";
+        g.fillStyle = "#131A2B";
         g.fill();
 
         // The ridge itself; the sweep brightens a band of it.
         path();
         const grad = g.createLinearGradient(left, 0, right, 0);
-        const baseA = (0.16 + 0.5 * depth) * appear;
+        const baseA = (0.22 + 0.55 * depth) * appear;
         const s0 = Math.min(1, Math.max(0, sweep - 0.08)), s1 = Math.min(1, Math.max(0, sweep)), s2 = Math.min(1, Math.max(0, sweep + 0.08));
         if (isActive || isHover) {
-          g.strokeStyle = isActive ? "#F0A33A" : "rgba(240,163,58,0.9)";
+          g.strokeStyle = isActive ? "#D9705A" : "rgba(217,112,90,0.95)";
           g.lineWidth = 2;
-          g.shadowColor = "rgba(240,163,58,0.8)";
+          g.shadowColor = "rgba(217,112,90,0.85)";
           g.shadowBlur = 16;
         } else {
-          grad.addColorStop(0, `rgba(244,237,225,${baseA})`);
-          grad.addColorStop(s0, `rgba(244,237,225,${baseA})`);
-          grad.addColorStop(s1, `rgba(244,237,225,${Math.min(1, baseA + 0.45)})`);
-          grad.addColorStop(s2, `rgba(244,237,225,${baseA})`);
-          grad.addColorStop(1, `rgba(244,237,225,${baseA})`);
+          grad.addColorStop(0, `rgba(241,230,207,${baseA})`);
+          grad.addColorStop(s0, `rgba(241,230,207,${baseA})`);
+          grad.addColorStop(s1, `rgba(241,230,207,${Math.min(1, baseA + 0.45)})`);
+          grad.addColorStop(s2, `rgba(241,230,207,${baseA})`);
+          grad.addColorStop(1, `rgba(241,230,207,${baseA})`);
           g.strokeStyle = grad;
           g.lineWidth = 1.1;
           g.shadowBlur = 0;
@@ -172,8 +172,8 @@ export function Ridgeline({ tracks, onHover }: { tracks: Track[]; onHover?: (t: 
           const y = P[j]?.[1] ?? base;
           x = Math.min(x, right);
           g.beginPath();
-          g.fillStyle = "#F0A33A";
-          g.shadowColor = "#F0A33A";
+          g.fillStyle = "#F1E6CF";
+          g.shadowColor = "#D9705A";
           g.shadowBlur = 24;
           g.arc(x, y, 5, 0, Math.PI * 2);
           g.fill();
@@ -184,8 +184,7 @@ export function Ridgeline({ tracks, onHover }: { tracks: Track[]; onHover?: (t: 
       // Scroll: the field tilts back and dims.
       if (wrap.current) {
         const p = Math.min(1, window.scrollY / (window.innerHeight * 0.9));
-        wrap.current.style.transform = `perspective(1200px) rotateX(${p * 38}deg) translateY(${-p * 60}px) scale(${1 - p * 0.08})`;
-        wrap.current.style.opacity = String(1 - p * 0.85);
+        wrap.current.style.transform = `perspective(1200px) rotateX(${p * 30}deg) translateY(${-p * 40}px)`;
       }
       raf = requestAnimationFrame(draw);
     };

@@ -3,6 +3,7 @@
 import katex from "katex";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Footer } from "@/components/Footer";
+import { FloralBand } from "@/components/Ornament";
 import { Line } from "@/components/Line";
 import { Magnetic } from "@/components/Magnetic";
 import { RiseChars } from "@/components/Text";
@@ -162,44 +163,45 @@ export default function Compose() {
   const beatOf = (i: number) => tokens[i];
 
   return (
-    <main className="bg-night">
+    <main className="bg-transparent">
       <section className="relative overflow-hidden px-6 pb-10 pt-36 sm:px-10">
-        <div className="pointer-events-none absolute -right-40 top-0 h-[640px] w-[640px] rounded-full bg-saffron/10 blur-[140px]" />
+        <div className="pointer-events-none absolute -right-40 top-0 h-[640px] w-[640px] rounded-full bg-sindoor/10 blur-[140px]" />
         <div className="relative mx-auto flex max-w-[1400px] flex-wrap items-end justify-between gap-8">
           <div>
-            <div className="text-[12px] uppercase tracking-[0.24em] text-mute">The composer</div>
+            <div className="text-[12px] uppercase tracking-[0.24em] text-sepia">The composer</div>
             <h1 className="mt-4 font-display text-[clamp(72px,12vw,200px)] leading-[0.85]"><RiseChars text="Compose." /></h1>
           </div>
           <div className="flex flex-wrap gap-2">
             {data.ragas.map((r) => (
-              <button key={r.key} onClick={() => { tick(); setRk(r.key); reset(); }} className={`rounded-full border px-5 py-2.5 text-[15px] transition-all ${r.key === rk ? "border-saffron bg-saffron text-night" : "border-smoke hover:border-saffron/60"}`}>
+              <button key={r.key} onClick={() => { tick(); setRk(r.key); reset(); }} className={`rounded-full border px-5 py-2.5 text-[15px] transition-all ${r.key === rk ? "border-sindoor bg-sindoor text-paper" : "border-rule hover:border-sindoor/60"}`}>
                 {r.name} <span className="ml-1 font-deva opacity-70">{r.devanagari}</span>
               </button>
             ))}
           </div>
         </div>
       </section>
+      <FloralBand />
 
       <section className="px-6 pb-24 sm:px-10">
         <div className="mx-auto grid max-w-[1400px] gap-6 lg:grid-cols-[1fr_380px]">
           <div className="space-y-6">
             {/* the line, live */}
-            <div className="relative overflow-hidden rounded-[28px] border border-smoke bg-coal p-6 text-ivory">
-              <div className="mb-2 flex items-center justify-between text-[13px] text-mute">
+            <div className="leaf-card relative overflow-hidden border border-rule p-6 text-kajal">
+              <div className="mb-2 flex items-center justify-between text-[13px] text-sepia">
                 <span>{tokens.length ? `${comp.beats} beats · ${comp.bars.length} bars` : "your melody will draw itself here"}</span>
-                {typing && <span className="text-saffron">ragaz is writing…</span>}
+                {typing && <span className="text-sindoor">ragaz is writing…</span>}
               </div>
               <div className="min-h-[220px]">
                 {notes.length > 1 ? (
-                  <Line key={notes.length} notes={notes} trackId={track?.id} aspect={3.6} width={2.6} axis={raga.swaras} base="ivory" draw={false} range={[-5, 14]} />
+                  <Line key={notes.length} notes={notes} trackId={track?.id} aspect={3.6} width={2.6} axis={raga.swaras} color="ink" base="ink" glow={false} draw={false} range={[-5, 14]} />
                 ) : (
-                  <div className="flex h-[220px] items-center justify-center font-display text-[40px] text-smoke">♪</div>
+                  <div className="flex h-[220px] items-center justify-center font-display text-[40px] text-rule">♪</div>
                 )}
               </div>
             </div>
 
             {/* the beat grid: one row per cycle of teentaal */}
-            <div className="rounded-[28px] border border-smoke bg-coal p-5">
+            <div className="leaf-card border border-rule p-5">
               <div className="grid grid-cols-4 gap-x-3 gap-y-3 sm:grid-cols-8 lg:grid-cols-[repeat(16,minmax(0,1fr))]">
                 {Array.from({ length: cells }, (_, i) => {
                   const t = beatOf(i);
@@ -208,31 +210,35 @@ export default function Compose() {
                   const isHead = head !== null && Math.floor(head) === i;
                   return (
                     <button key={i} onClick={() => { tick("soft"); setCursor(i); }} data-cursor="Write here"
-                      className={`relative flex h-14 items-center justify-center rounded-xl border text-[15px] transition-all duration-200 ${isHead ? "scale-105 border-saffron bg-saffron text-night" : i === cursor ? "border-saffron text-ivory shadow-[0_0_0_3px_rgba(240,163,58,.18)]" : t ? "border-smoke text-ivory" : "border-smoke/60 text-smoke"} ${wrong ? "!border-ember !text-ember" : ""} ${i % 4 === 0 ? "ml-0" : ""}`}>
-                      {t ? (t === "-" ? "–" : `${NAMES[n!.s]}${n!.o > 0 ? "′" : n!.o < 0 ? "," : ""}`) : i % 16 === 0 ? <span className="text-[11px] text-saffron/60">×</span> : ""}
+                      className={`relative flex h-14 items-center justify-center rounded-xl border text-[15px] transition-all duration-200 ${isHead ? "scale-105 border-sindoor bg-sindoor text-paper" : i === cursor ? "border-sindoor text-kajal shadow-[0_0_0_3px_rgba(233,162,59,.18)]" : t ? "border-rule text-kajal" : "border-rule/60 text-rule"} ${wrong ? "!border-sindoor !text-sindoor" : ""} ${i % 4 === 0 ? "ml-0" : ""}`}>
+                      {t ? (t === "-" ? "–" : `${NAMES[n!.s]}${n!.o > 0 ? "′" : n!.o < 0 ? "," : ""}`) : i % 16 === 0 ? <span className="text-[11px] text-sindoor/60">×</span> : ""}
                     </button>
                   );
                 })}
               </div>
-              <div className="mt-3 text-[13px] text-mute">Four beats to a bar, sixteen to a cycle (teentaal). × marks the first beat of a cycle. Click a cell to move the cursor.</div>
+              <div className="mt-3 text-[13px] text-sepia">Four beats to a bar, sixteen to a cycle (teentaal). × marks the first beat of a cycle. Click a cell to move the cursor.</div>
             </div>
 
             {/* the instrument */}
-            <div className="rounded-[28px] border border-smoke bg-coal p-5">
-              <div className="flex flex-wrap items-end gap-2">
+            <div className="leaf-card border border-rule p-5">
+              {/* bellows, breathing as you play */}
+              <div className="relative mx-3 h-11 overflow-hidden rounded-t-md border-x-[3px] border-t-[3px] border-[#5E1F14] bg-paper2">
+                <div className="absolute inset-0 transition-transform duration-300 ease-out" style={{ transform: `scaleY(${pressed ? 0.78 : 1})`, transformOrigin: "bottom", backgroundImage: "repeating-linear-gradient(180deg, #F1E6CF 0 6px, #CDB690 6px 7px, #E8D8BA 7px 12px, #131A2B 12px 13px)" }} />
+              </div>
+              <div className="flex flex-wrap items-end gap-[3px] rounded-md border-[10px] border-[#5E1F14] bg-[#5E1F14] p-1">
                 {keys.map((k) => {
                   const midIndex = keys.filter((x) => x.o >= 0).indexOf(k);
                   const on = pressed === `${k.s}${k.o}`;
                   return (
                     <button key={`${k.s}${k.o}`} data-cursor="Sing" onPointerDown={() => sing(k.s, k.o)}
-                      className={`relative flex flex-col items-center justify-end rounded-2xl border pb-3 transition-all duration-150 ${k.o === 0 ? "h-36 w-[4.5rem] border-ivory/20 bg-ivory/[.06] text-ivory" : "h-28 w-14 border-smoke text-mute"} ${on ? "translate-y-1 scale-95 border-saffron bg-saffron text-night" : "hover:border-saffron/70"}`}>
+                      className={`relative flex flex-col items-center justify-end rounded-b-md border pb-3 shadow-[0_6px_0_#cdbb98] transition-all duration-100 ${k.o === 0 ? "h-40 w-[4.5rem] border-[#cdbb98] bg-[#FBF5E6] text-kajal" : "h-32 w-14 border-[#cdbb98] bg-[#F3E9D2] text-sepia"} ${on ? "translate-y-1.5 bg-[#efe2c4] shadow-[0_2px_0_#cdbb98]" : "hover:bg-[#fffaf0]"}`}>
                       <span className="font-display text-[26px] leading-none">{NAMES[k.s]}</span>
                       <span className="mt-1 text-[11px] opacity-70">{k.o > 0 ? "upper" : k.o < 0 ? "lower" : "rgdn".includes(k.s) ? "komal" : k.s === "M" ? "tivra" : " "}</span>
                       {midIndex >= 0 && midIndex < KEYS.length && <span className="absolute left-2 top-2 font-mono text-[10px] uppercase opacity-50">{KEYS[midIndex]}</span>}
                     </button>
                   );
                 })}
-                <button onClick={() => { tick(); put("-"); }} data-cursor="Hold" className="h-28 w-20 rounded-2xl border border-dashed border-smoke text-mute hover:border-saffron hover:text-saffron">hold<br /><span className="font-mono text-[11px]">–</span></button>
+                <button onClick={() => { tick(); put("-"); }} data-cursor="Hold" className="h-32 w-20 rounded-b-md border border-[#cdbb98] bg-[#F3E9D2] font-display text-kajal shadow-[0_6px_0_#cdbb98] hover:bg-[#fffaf0]">hold<br /><span className="font-mono text-[11px]">–</span></button>
               </div>
               <div className="mt-5 flex flex-wrap gap-3">
                 <Magnetic variant="solid" cursor={track && head !== null ? "Stop" : "Play"} onClick={() => (track ? (head !== null ? stop() : play(track)) : undefined)}>{head !== null ? "❚❚ Stop" : "▶ Play mine"}</Magnetic>
@@ -246,14 +252,14 @@ export default function Compose() {
 
           {/* the verdict */}
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-[28px] bg-paper p-7 text-ink">
-              <div className="text-[12px] uppercase tracking-[0.24em] text-ink/50">Score</div>
+            <div className="leaf-card relative border border-rule p-7 text-kajal"><span className="pointer-events-none absolute inset-[6px] border border-sindoor/40" />
+              <div className="text-[12px] uppercase tracking-[0.24em] text-kajal/50">Score</div>
               <div className="mt-2 flex items-end gap-3">
-                <span className={`font-display text-[112px] leading-[0.85] tabular-nums ${report && report.reward < 0.3 ? "text-ember" : "text-ink"}`}>{score.toFixed(2)}</span>
-                <span className="pb-3 text-[14px] text-ink/50">/ 1</span>
+                <span className={`font-display text-[112px] leading-[0.85] tabular-nums ${report && report.reward < 0.3 ? "text-sindoor" : "text-kajal"}`}>{score.toFixed(2)}</span>
+                <span className="pb-3 text-[14px] text-kajal/50">/ 1</span>
               </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-sand"><div className="h-full rounded-full bg-saffron transition-[width] duration-500" style={{ width: `${score * 100}%` }} /></div>
-              <div className="mt-2 flex justify-between text-[12px] text-ink/50"><span>0</span><span>ragaz averages {modelAvg.toFixed(2)}</span><span>1</span></div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-paper2"><div className="h-full rounded-full bg-sindoor transition-[width] duration-500" style={{ width: `${score * 100}%` }} /></div>
+              <div className="mt-2 flex justify-between text-[12px] text-kajal/50"><span>0</span><span>ragaz averages {modelAvg.toFixed(2)}</span><span>1</span></div>
               <p className="mt-6 text-[18px] leading-[1.5]">{verdict}</p>
               {report && (
                 <ul className="mt-6 space-y-2.5 text-[15px]">
@@ -261,35 +267,35 @@ export default function Compose() {
                     const v = report.scores[k];
                     return (
                       <li key={k} className="flex items-center gap-3">
-                        <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[12px] ${v >= 0.8 ? "bg-ink text-paper" : v >= 0.4 ? "bg-saffron text-night" : "bg-ember text-paper"}`}>{v >= 0.8 ? "✓" : v >= 0.4 ? "~" : "✕"}</span>
-                        <span className={v >= 0.8 ? "" : "text-ink/70"}>{PLAIN[k]}</span>
+                        <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[12px] ${v >= 0.8 ? "bg-kajal text-paper" : v >= 0.4 ? "bg-sindoor text-paper" : "bg-sindoor text-paper"}`}>{v >= 0.8 ? "✓" : v >= 0.4 ? "~" : "✕"}</span>
+                        <span className={v >= 0.8 ? "" : "text-kajal/70"}>{PLAIN[k]}</span>
                       </li>
                     );
                   })}
                 </ul>
               )}
-              <button onClick={() => { tick(); setMath(!math); }} className="mt-7 text-[15px] underline decoration-ink/30 underline-offset-4 hover:decoration-ink">{math ? "Hide the math" : "Show the math"}</button>
+              <button onClick={() => { tick(); setMath(!math); }} className="mt-7 text-[15px] underline decoration-kajal/30 underline-offset-4 hover:decoration-kajal">{math ? "Hide the math" : "Show the math"}</button>
               {math && report && (
                 <div className="mt-5 space-y-4">
                   <div className="overflow-x-auto text-[13px] [&_.katex]:text-[0.9em]" dangerouslySetInnerHTML={{ __html: tex }} />
                   <div className="space-y-2 text-[14px]">
                     {[...GATES, ...(Object.keys(WEIGHTS_V2) as (keyof typeof WEIGHTS_V2)[])].map((k) => (
                       <div key={k} className="grid grid-cols-[6.5rem_1fr_3rem] items-center gap-2">
-                        <span className="text-ink/60">{k}</span>
-                        <div className="h-1.5 rounded-full bg-sand"><div className="h-full rounded-full bg-ink" style={{ width: `${report.scores[k] * 100}%` }} /></div>
+                        <span className="text-kajal/60">{k}</span>
+                        <div className="h-1.5 rounded-full bg-paper2"><div className="h-full rounded-full bg-kajal" style={{ width: `${report.scores[k] * 100}%` }} /></div>
                         <span className="text-right tabular-nums">{report.scores[k].toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
-                  <div className="text-[13px] text-ink/60">gates × style = {report.gate.toFixed(3)} × {report.shaped.toFixed(3)}. The same function scored every piece the model wrote.</div>
+                  <div className="text-[13px] text-kajal/60">gates × style = {report.gate.toFixed(3)} × {report.shaped.toFixed(3)}. The same function scored every piece the model wrote.</div>
                 </div>
               )}
             </div>
             <div className="mt-4 flex gap-3">
-              <button disabled={!tokens.length} onClick={() => { tick(); navigator.clipboard?.writeText(text); setCopied(true); window.setTimeout(() => setCopied(false), 1500); }} className="flex-1 rounded-full border border-smoke py-3 text-[14px] hover:border-saffron disabled:opacity-40">{copied ? "Copied ✓" : "Copy notation"}</button>
-              <button disabled={!tokens.length} onClick={() => { tick(); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([`Raga ${raga.name}\n${text}\n`], { type: "text/plain" })); a.download = `my-${raga.key}.txt`; a.click(); }} className="flex-1 rounded-full border border-smoke py-3 text-[14px] hover:border-saffron disabled:opacity-40">Download</button>
+              <button disabled={!tokens.length} onClick={() => { tick(); navigator.clipboard?.writeText(text); setCopied(true); window.setTimeout(() => setCopied(false), 1500); }} className="flex-1 rounded-full border border-rule py-3 text-[14px] hover:border-sindoor disabled:opacity-40">{copied ? "Copied ✓" : "Copy notation"}</button>
+              <button disabled={!tokens.length} onClick={() => { tick(); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([`Raga ${raga.name}\n${text}\n`], { type: "text/plain" })); a.download = `my-${raga.key}.txt`; a.click(); }} className="flex-1 rounded-full border border-rule py-3 text-[14px] hover:border-sindoor disabled:opacity-40">Download</button>
             </div>
-            {tokens.length > 0 && <div className="mt-4 break-words font-mono text-[13px] leading-relaxed tracking-wider text-mute">{text}</div>}
+            {tokens.length > 0 && <div className="mt-4 break-words font-mono text-[13px] leading-relaxed tracking-wider text-sepia">{text}</div>}
           </aside>
         </div>
       </section>

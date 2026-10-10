@@ -48,12 +48,12 @@ export function Cursor() {
   const big = label !== null;
   return (
     <>
-      <div ref={dot} className="pointer-events-none fixed left-0 top-0 z-[100] -ml-[3px] -mt-[3px] h-[6px] w-[6px] rounded-full bg-[#F4EDE1] mix-blend-difference" />
+      <div ref={dot} className="pointer-events-none fixed left-0 top-0 z-[100] -ml-[3px] -mt-[3px] h-[6px] w-[6px] rounded-full bg-[#F1E6CF] mix-blend-difference" />
       <div ref={ring} className={`pointer-events-none fixed left-0 top-0 z-[99] ${label ? "" : "mix-blend-difference"}`}>
         <div
-          className={`-translate-x-1/2 -translate-y-1/2 rounded-full border transition-all duration-300 ease-out ${big ? (label ? "flex h-[74px] w-[74px] items-center justify-center border-saffron bg-saffron/90" : "h-11 w-11 border-saffron") : "h-8 w-8 border-[#F4EDE1]/40"}`}
+          className={`-translate-x-1/2 -translate-y-1/2 rounded-full border transition-all duration-300 ease-out ${big ? (label ? "flex h-[74px] w-[74px] items-center justify-center border-sindoor bg-sindoor/90" : "h-11 w-11 border-sindoor") : "h-8 w-8 border-[#F1E6CF]/60"}`}
         >
-          {label && <span className="text-[12px] font-medium tracking-wide text-night">{label}</span>}
+          {label && <span className="font-sans text-[12px] font-medium tracking-wide text-paper">{label}</span>}
         </div>
       </div>
     </>

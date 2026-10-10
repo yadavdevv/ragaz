@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Footer } from "@/components/Footer";
+import { FloralBand } from "@/components/Ornament";
 import { Magnetic } from "@/components/Magnetic";
 import { PieceCard } from "@/components/PieceCard";
 import { RiseChars } from "@/components/Text";
@@ -15,7 +16,7 @@ const MODELS = [
 
 function Chip({ on, children, onClick }: { on: boolean; children: React.ReactNode; onClick: () => void }) {
   return (
-    <button onClick={() => { tick("soft"); onClick(); }} className={`rounded-full border px-5 py-2.5 text-[15px] transition-all duration-300 ${on ? "border-saffron bg-saffron text-night" : "border-smoke text-ivory hover:border-saffron/60"}`}>
+    <button onClick={() => { tick("soft"); onClick(); }} className={`rounded-full border px-5 py-2.5 text-[15px] transition-all duration-300 ${on ? "border-sindoor bg-sindoor text-paper" : "border-rule text-kajal hover:border-sindoor/60"}`}>
       {children}
     </button>
   );
@@ -36,19 +37,19 @@ export default function Listen() {
   const m = MODELS.find((x) => x.key === model)!;
 
   return (
-    <main className="min-h-screen bg-night">
+    <main className="min-h-screen bg-transparent">
       <section className="relative overflow-hidden px-6 pb-12 pt-36 sm:px-10">
-        <div className="pointer-events-none absolute -left-40 -top-40 h-[640px] w-[640px] rounded-full bg-saffron/10 blur-[140px]" />
+        <div className="pointer-events-none absolute -left-40 -top-40 h-[640px] w-[640px] rounded-full bg-sindoor/10 blur-[140px]" />
         <div className="relative mx-auto max-w-[1400px]">
-          <div className="text-[12px] uppercase tracking-[0.24em] text-mute">The library</div>
+          <div className="text-[12px] uppercase tracking-[0.24em] text-sepia">The library</div>
           <h1 className="mt-4 font-display text-[clamp(72px,13vw,220px)] leading-[0.85]"><RiseChars text="Listen." /></h1>
           <div className="mt-10 flex flex-wrap items-end justify-between gap-8">
-            <p className="max-w-[44ch] text-[19px] leading-[1.6] text-mute">
-              {data.pieces.length} pieces, each written by the model from nothing but a raga's name. Showing {tracks.length} by the <span className="text-ivory">{m.label.toLowerCase()}</span>, {m.note}.
+            <p className="max-w-[44ch] text-[19px] leading-[1.6] text-sepia">
+              {data.pieces.length} pieces, each written by the model from nothing but a raga's name. Showing {tracks.length} by the <span className="text-kajal">{m.label.toLowerCase()}</span>, {m.note}.
             </p>
             <Magnetic variant="solid" size="lg" cursor="Play all" onClick={() => { useSite.getState().set({ queue: tracks }); if (tracks[0]) play(tracks[0], { open: true }); }}>▶ Play all, full screen</Magnetic>
           </div>
-          <div className="mt-12 flex flex-wrap gap-x-8 gap-y-4 border-t border-smoke pt-8">
+          <div className="mt-12 flex flex-wrap gap-x-8 gap-y-4 border-t border-rule pt-8">
             <div className="flex flex-wrap gap-2">
               {["all", "bhupali", "yaman", "malkauns"].map((k) => <Chip key={k} on={raga === k} onClick={() => setRaga(k)}>{k === "all" ? "All ragas" : data.ragas.find((r) => r.key === k)!.name}</Chip>)}
             </div>
@@ -62,12 +63,13 @@ export default function Listen() {
           </div>
         </div>
       </section>
+      <FloralBand />
       <section className="px-6 pb-32 sm:px-10">
         <div key={`${raga}-${model}-${sort}`} className="mx-auto grid max-w-[1400px] gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {tracks.map((t, i) => (
             <div key={t.id} style={{ animation: `rise .9s cubic-bezier(.16,1,.3,1) ${Math.min(i, 12) * 50}ms both` }}>
               <PieceCard track={t} queue={tracks} />
-              <div className="mt-2 px-2 text-right text-[13px] tabular-nums text-mute">score {t.reward?.toFixed(2)}</div>
+              <div className="mt-2 px-2 text-right text-[13px] tabular-nums text-sepia">score {t.reward?.toFixed(2)}</div>
             </div>
           ))}
         </div>

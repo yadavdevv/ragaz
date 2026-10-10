@@ -8,7 +8,7 @@ import { peekEngine } from "@/lib/audio";
 import { linePoints, pathFrom, pieceEnd, pitchRange } from "@/lib/line";
 import { type Note, SWARAS, semis } from "@/lib/music";
 
-const COLORS = { saffron: "#F0A33A", ivory: "#F4EDE1", ink: "#1A1410" };
+const COLORS = { gulal: "#D9705A", paper: "#F1E6CF", ink: "#131A2B", sindoor: "#B23A22" };
 const NAMES: Record<string, string> = { S: "Sa", r: "Re", R: "Re", g: "Ga", G: "Ga", m: "Ma", M: "Ma", P: "Pa", d: "Dha", D: "Dha", n: "Ni", N: "Ni" };
 
 type Props = {
@@ -25,7 +25,7 @@ type Props = {
   className?: string;
 };
 
-export function Line({ notes, trackId, aspect = 4, color = "saffron", base, width = 2, glow = true, draw = true, axis, range, className = "" }: Props) {
+export function Line({ notes, trackId, aspect = 4, color = "gulal", base, width = 2, glow = true, draw = true, axis, range, className = "" }: Props) {
   const W = 1000, H = W / aspect;
   const L = axis ? 56 : 8, P = 10;
   const svg = useRef<SVGSVGElement>(null);
@@ -39,6 +39,7 @@ export function Line({ notes, trackId, aspect = 4, color = "saffron", base, widt
   const d = useMemo(() => pathFrom(linePoints(notes, x, y)), [notes, lo, hi, aspect, axis]); // eslint-disable-line react-hooks/exhaustive-deps
   const id = useMemo(() => Math.random().toString(36).slice(2), []);
   const c = COLORS[color];
+  const lit = color === "ink" ? COLORS.sindoor : c; // ink drawings light up in vermilion
 
   // Draw in on first view.
   useEffect(() => {
@@ -77,7 +78,7 @@ export function Line({ notes, trackId, aspect = 4, color = "saffron", base, widt
         // while playing, the unplayed part steps back so the played part can glow
         if (main.current) {
           main.current.style.stroke = on && base ? COLORS[base] : c;
-          main.current.style.strokeOpacity = on && base ? "0.3" : "1";
+          main.current.style.strokeOpacity = on && base ? "0.25" : "1";
         }
       }
       raf = requestAnimationFrame(loop);
@@ -105,14 +106,14 @@ export function Line({ notes, trackId, aspect = 4, color = "saffron", base, widt
       <path ref={main} d={d} fill="none" stroke={c} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" style={{ transition: "stroke .4s, stroke-opacity .4s, stroke-dashoffset 2.2s cubic-bezier(.16,1,.3,1)" }} />
       {trackId && (
         <g clipPath={`url(#clip-${id})`}>
-          <path d={d} fill="none" stroke={c} strokeWidth={width * 6} strokeOpacity="0.35" filter={`url(#glow-${id})`} />
-          <path d={d} fill="none" stroke={c} strokeWidth={width * 1.2} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          <path d={d} fill="none" stroke={lit} strokeWidth={width * 6} strokeOpacity="0.3" filter={`url(#glow-${id})`} />
+          <path d={d} fill="none" stroke={lit} strokeWidth={width * 1.3} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         </g>
       )}
       {trackId && (
         <g ref={dot} style={{ opacity: 0 }}>
-          <circle r="22" fill={c} fillOpacity="0.18" />
-          <circle r="7" fill={c} />
+          <circle r="22" fill={lit} fillOpacity="0.18" />
+          <circle r="7" fill={lit} />
         </g>
       )}
     </svg>

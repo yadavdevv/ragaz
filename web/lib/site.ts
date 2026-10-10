@@ -4,13 +4,14 @@
 
 import { useEffect } from "react";
 import { create } from "zustand";
-import { getEngine, peekEngine } from "./audio";
+import { type Timbre, getEngine, peekEngine } from "./audio";
 import type { Masters, Note, Piece, Raga, RagaData } from "./music";
 import type { Profiles } from "./verify";
 
 export type Exhibit = { key: string; title: string; notes: Note[]; raga: string; reward_then: number | null; reward_now: number; notation: string; source: string };
 export type Journey = Record<string, Record<string, [number, number][]> & { sa?: Record<string, [number, number][]> }>;
-export type Data = { ragas: Raga[]; pieces: Piece[]; masters: Masters; profiles: Profiles; exhibits: Exhibit[]; journey: Journey };
+export type Voice = { raga: string; recording: string; title: string; start: number; hop: number; cents: (number | null)[]; source: string };
+export type Data = { ragas: Raga[]; pieces: Piece[]; masters: Masters; profiles: Profiles; exhibits: Exhibit[]; journey: Journey; voices: Voice[] };
 
 /** Anything the player can play: a piece, a phrase, or something you wrote. */
 export type Track = { id: string; title: string; sub: string; raga: string; notes: Note[]; notation?: string; reward?: number };
@@ -23,20 +24,22 @@ type State = {
   tempo: number;
   drone: boolean;
   queue: Track[];
+  timbre: Timbre;
+  curveTag: string | null; // a real singer's curve being sung
   set: (p: Partial<State>) => void;
 };
 
-export const useSite = create<State>((set) => ({ data: null, track: null, playing: false, open: false, tempo: 76, drone: false, queue: [], set: (p) => set(p) }));
+export const useSite = create<State>((set) => ({ data: null, track: null, playing: false, open: false, tempo: 76, drone: false, queue: [], timbre: "voice", curveTag: null, set: (p) => set(p) }));
 
 let loading: Promise<void> | null = null;
 export function useData() {
   const data = useSite((s) => s.data);
   useEffect(() => {
     if (data || loading) return;
-    loading = Promise.all(["ragas", "pieces", "masters", "profiles", "exhibits", "journey"].map((n) => fetch(`/data/${n}.json`).then((r) => r.json()))).then(
+    loading = Promise.all(["ragas", "pieces", "masters", "profiles", "exhibits", "journey", "voices"].map((n) => fetch(`/data/${n}.json`).then((r) => r.json()))).then(
       (all) => {
-        const [ragas, pieces, masters, profiles, exhibits, journey] = all as [RagaData, Piece[], Masters, Profiles, Exhibit[], Journey];
-        useSite.getState().set({ data: { ragas: ragas.ragas, pieces, masters, profiles, exhibits, journey } });
+        const [ragas, pieces, masters, profiles, exhibits, journey, voices] = all as [RagaData, Piece[], Masters, Profiles, Exhibit[], Journey, Voice[]];
+        useSite.getState().set({ data: { ragas: ragas.ragas, pieces, masters, profiles, exhibits, journey, voices } });
       },
     );
   }, [data]);
@@ -67,15 +70,42 @@ export async function play(track: Track, opts: { open?: boolean } = {}) {
     useSite.getState().set({ playing: false });
     if (!useSite.getState().drone) eng.stopDrone(2);
   };
+  eng.timbre = s.timbre;
   eng.play(track.notes, s.tempo, track.id);
-  s.set({ track, playing: true, open: opts.open ?? s.open });
+  s.set({ track, playing: true, curveTag: null, open: opts.open ?? s.open });
 }
 
 export function stop() {
   const eng = peekEngine();
   eng?.stopPiece();
   if (eng && !useSite.getState().drone) eng.stopDrone(1.5);
-  useSite.getState().set({ playing: false });
+  useSite.getState().set({ playing: false, curveTag: null });
+}
+
+/** Sing a real singer's pitch curve (resynthesised) over the tanpura. */
+export async function singVoice(v: Voice) {
+  const eng = getEngine();
+  await eng.resume();
+  const raga = ragaOf(v.raga);
+  if (raga) eng.retune(raga);
+  if (!eng.droneOn) {
+    if (raga) eng.tune(raga);
+    eng.startDrone(1);
+  }
+  const tag = `voice-${v.raga}`;
+  eng.onEnd = (pb) => {
+    if (pb.tag !== tag) return;
+    useSite.getState().set({ curveTag: null, playing: false });
+    if (!useSite.getState().drone) eng.stopDrone(2);
+  };
+  eng.singCurve(v.cents, v.hop, tag);
+  useSite.getState().set({ curveTag: tag, playing: false });
+}
+
+export function setTimbre(t: Timbre) {
+  useSite.getState().set({ timbre: t });
+  const eng = peekEngine();
+  if (eng) eng.timbre = t;
 }
 
 export function toggle(track: Track, opts: { open?: boolean } = {}) {

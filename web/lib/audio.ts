@@ -112,6 +112,93 @@ class Flute {
   }
 }
 
+/** A sung "aa" (aakar): a buzzy source through vowel formants, sliding between notes
+ *  the way a Hindustani vocalist does (a scoop into each note, slow meend between them). */
+class Voice {
+  osc: OscillatorNode;
+  lfo: OscillatorNode;
+  wobble: OscillatorNode;
+  noise: AudioBufferSourceNode;
+  amp: GainNode;
+  breath: GainNode;
+  depth: GainNode;
+  constructor(ctx: AudioContext, out: AudioNode, noiseBuf: AudioBuffer, wave: PeriodicWave) {
+    this.osc = ctx.createOscillator();
+    this.osc.setPeriodicWave(wave);
+    this.amp = ctx.createGain();
+    this.amp.gain.value = 0;
+    // "aa" formants (F1–F4), in parallel, then a gentle top roll-off.
+    const sum = ctx.createGain();
+    const top = ctx.createBiquadFilter();
+    top.type = "lowpass";
+    top.frequency.value = 5200;
+    for (const [f, q, g] of [[760, 6, 1], [1180, 8, 0.6], [2620, 11, 0.32], [3450, 14, 0.12]]) {
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = f;
+      bp.Q.value = q;
+      const gg = ctx.createGain();
+      gg.gain.value = g * 3.2;
+      this.osc.connect(bp).connect(gg).connect(sum);
+    }
+    const body = ctx.createGain(); // a little of the raw source for warmth
+    body.gain.value = 0.12;
+    this.osc.connect(body).connect(sum);
+    sum.connect(top).connect(this.amp).connect(out);
+    // vibrato that blooms on held notes, plus a slow natural wobble
+    this.lfo = ctx.createOscillator();
+    this.lfo.frequency.value = 5.4;
+    this.depth = ctx.createGain();
+    this.depth.gain.value = 0;
+    this.lfo.connect(this.depth).connect(this.osc.frequency);
+    this.wobble = ctx.createOscillator();
+    this.wobble.frequency.value = 0.9;
+    const wd = ctx.createGain();
+    wd.gain.value = 0.9;
+    this.wobble.connect(wd).connect(this.osc.frequency);
+    // breath through the second formant
+    this.noise = ctx.createBufferSource();
+    this.noise.buffer = noiseBuf;
+    this.noise.loop = true;
+    const nb = ctx.createBiquadFilter();
+    nb.type = "bandpass";
+    nb.frequency.value = 1500;
+    nb.Q.value = 1.2;
+    this.breath = ctx.createGain();
+    this.breath.gain.value = 0;
+    this.noise.connect(nb).connect(this.breath).connect(out);
+  }
+  start(at: number, hz: number) {
+    this.osc.frequency.setValueAtTime(hz * 0.97, at);
+    for (const s of [this.osc, this.lfo, this.wobble, this.noise]) s.start(at - 0.02);
+  }
+  note(at: number, hz: number, dur: number, first = false, level = 1) {
+    if (first) {
+      this.osc.frequency.setValueAtTime(hz * 0.97, at); // a scoop up into the first note
+      this.osc.frequency.setTargetAtTime(hz, at + 0.01, 0.04);
+      this.amp.gain.setTargetAtTime(level, at, 0.05);
+    } else {
+      this.osc.frequency.setTargetAtTime(hz, at - 0.035, 0.032); // meend: a slow slide
+      this.amp.gain.setTargetAtTime(level * 0.9, at - 0.02, 0.03);
+      this.amp.gain.setTargetAtTime(level, at + 0.05, 0.08);
+    }
+    this.breath.gain.setTargetAtTime(0.035 * level, at, 0.03);
+    this.breath.gain.setTargetAtTime(0.015 * level, at + 0.1, 0.1);
+    this.depth.gain.setTargetAtTime(0, at, 0.03);
+    if (dur > 0.35) this.depth.gain.setTargetAtTime(0.011 * hz, at + 0.3, 0.25);
+  }
+  release(at: number, tau = 0.12) {
+    for (const g of [this.amp.gain, this.breath.gain, this.depth.gain]) {
+      g.cancelScheduledValues(at);
+      g.setTargetAtTime(0, at, tau);
+    }
+    for (const s of [this.osc, this.lfo, this.wobble, this.noise]) s.stop(at + tau * 10);
+  }
+}
+
+export type Timbre = "voice" | "flute";
+export type Curve = { t0: number; hop: number; end: number; tag: string };
+
 export class Engine {
   ctx: AudioContext;
   analyser: AnalyserNode;
@@ -127,7 +214,10 @@ export class Engine {
   private strings: AudioBuffer[] = [];
   private droneTimer: number | null = null;
   private nextPluck = { at: 0, i: 0 };
-  private piece: Flute | null = null;
+  private piece: Flute | Voice | null = null;
+  timbre: Timbre = "voice";
+  curve: Curve | null = null;
+  private voiceWave: PeriodicWave;
   private glide: Flute | null = null;
   private test: Flute | null = null;
   private noiseBuf: AudioBuffer;
@@ -164,6 +254,9 @@ export class Engine {
     const r = seeded(7);
     for (let i = 0; i < nd.length; i++) nd[i] = r() * 2 - 1;
     this.wave = ctx.createPeriodicWave(new Float32Array(HARMONICS.length + 1), new Float32Array([0, ...HARMONICS]));
+    // A glottal-like source: many harmonics, falling ~1/k^1.1.
+    const vk = Array.from({ length: 40 }, (_, k) => (k === 0 ? 0 : 1 / k ** 1.1));
+    this.voiceWave = ctx.createPeriodicWave(new Float32Array(40), new Float32Array(vk));
   }
 
   get now() {
@@ -174,6 +267,9 @@ export class Engine {
   }
   private flute() {
     return new Flute(this.ctx, this.leadBus, this.noiseBuf, this.wave);
+  }
+  private lead(): Flute | Voice {
+    return this.timbre === "voice" ? new Voice(this.ctx, this.leadBus, this.noiseBuf, this.voiceWave) : this.flute();
   }
 
   // ------------------------------------------------------------ tanpura
@@ -243,7 +339,7 @@ export class Engine {
     const t0 = this.now + 0.3;
     const last = notes[notes.length - 1];
     const end = t0 + (last.t + last.d) * beat;
-    const v = this.flute();
+    const v = this.lead();
     v.start(t0, swaraHz(notes[0].s, notes[0].o, this.saHz));
     notes.forEach((n, i) => v.note(t0 + n.t * beat, swaraHz(n.s, n.o, this.saHz), n.d * beat, i === 0));
     v.release(end);
@@ -259,7 +355,46 @@ export class Engine {
     this.piece?.release(this.now, 0.05);
     this.piece = null;
     this.playback = null;
+    this.curve = null;
     if (this.endTimer) window.clearTimeout(this.endTimer);
+  }
+
+  /** Sing a real singer's pitch curve (cents above Sa every `hop` s; null = silence),
+   *  transposed to this Sa. This is a resynthesis of the pitch, not the recording. */
+  singCurve(cents: (number | null)[], hop: number, tag: string): Curve {
+    this.stopPiece();
+    const t0 = this.now + 0.25;
+    const first = cents.find((c) => c !== null) ?? 0;
+    const v = new Voice(this.ctx, this.leadBus, this.noiseBuf, this.voiceWave);
+    v.start(t0, this.saHz * 2 ** (first / 1200));
+    v.depth.gain.value = 0; // the real curve already carries its own vibrato and gamak
+    let voiced = false;
+    cents.forEach((c, i) => {
+      const at = t0 + i * hop;
+      if (c === null) {
+        if (voiced) v.amp.gain.setTargetAtTime(0, at, 0.03);
+        voiced = false;
+        return;
+      }
+      v.osc.frequency.linearRampToValueAtTime(this.saHz * 2 ** (c / 1200), at);
+      if (!voiced) {
+        v.amp.gain.setTargetAtTime(0.95, at, 0.04);
+        v.breath.gain.setTargetAtTime(0.02, at, 0.05);
+      }
+      voiced = true;
+    });
+    const end = t0 + cents.length * hop;
+    v.release(end, 0.15);
+    this.piece = v;
+    this.playback = null;
+    const curve = { t0, hop, end, tag };
+    this.curve = curve;
+    if (this.endTimer) window.clearTimeout(this.endTimer);
+    this.endTimer = window.setTimeout(() => {
+      if (this.curve === curve) this.curve = null;
+      this.onEnd?.({ t0, beat: 1, end, notes: [], tag });
+    }, (end - this.now + 0.3) * 1000);
+    return curve;
   }
 
   /** Resolves when the given playback finishes (or is replaced). */
@@ -275,7 +410,7 @@ export class Engine {
   /** One short note (a tap on the mandala). Wrong notes sound muted. */
   note(swara: string, octave: number, dur = 0.55, kind: Hit["kind"] = "note") {
     const hz = swaraHz(swara, octave, this.saHz);
-    const v = this.flute();
+    const v = this.lead();
     const at = this.now + 0.01;
     v.start(at, hz);
     v.note(at, hz, dur, true, kind === "wrong" ? 0.3 : 0.85);
@@ -342,6 +477,87 @@ export class Engine {
   }
   get testing() {
     return this.test !== null;
+  }
+
+  /** Pluck one tanpura string by hand (0 = Pa/Ma, 1–2 = Sa, 3 = low Sa). */
+  pluckString(i: number, level = 0.5) {
+    if (!this.strings.length) return;
+    const s = this.ctx.createBufferSource();
+    s.buffer = this.strings[i % 4];
+    const g = this.ctx.createGain();
+    g.gain.value = level;
+    s.connect(g).connect(this.bus);
+    const at = this.now + 0.005;
+    s.start(at);
+    this.plucks.push({ at, string: i % 4 });
+    if (this.plucks.length > 64) this.plucks.shift();
+  }
+
+  /** A tabla stroke, synthesised: the dayan (right, tuned to Sa) rings bright and short;
+   *  the bayan (left) is a low boom whose pitch rises as the palm presses. */
+  tabla(bol: string, at = this.now + 0.005, level = 1) {
+    const ctx = this.ctx;
+    const out = ctx.createGain();
+    out.gain.value = 0.55 * level;
+    out.connect(this.bus);
+    const b = bol.toLowerCase();
+    const dayan = /^(na|ta|tin|tun|dhin|dha|ti|te|ra|ki|tit)/.test(b) || b === "dhin" || b === "dha";
+    const bayan = /^(dha|dhin|ge|ghe|ka|kat)/.test(b);
+    const ring = /^(tin|tun|dhin)/.test(b); // open, resonant strokes
+    if (dayan) {
+      // a few inharmonic partials of a loaded membrane, over Sa
+      for (const [m, g] of [[1, 1], [2, 0.5], [3, 0.32], [4.1, 0.18]] as const) {
+        const o = ctx.createOscillator();
+        o.frequency.value = this.saHz * m;
+        const e = ctx.createGain();
+        const dec = (ring ? 0.55 : 0.16) / Math.sqrt(m);
+        e.gain.setValueAtTime(0, at);
+        e.gain.linearRampToValueAtTime(0.3 * g, at + 0.003);
+        e.gain.exponentialRampToValueAtTime(0.0001, at + dec);
+        o.connect(e).connect(out);
+        o.start(at);
+        o.stop(at + dec + 0.05);
+      }
+      // the click of the finger
+      const n = ctx.createBufferSource();
+      n.buffer = this.noiseBuf;
+      const f = ctx.createBiquadFilter();
+      f.type = "highpass";
+      f.frequency.value = 3000;
+      const e = ctx.createGain();
+      e.gain.setValueAtTime(0.25, at);
+      e.gain.exponentialRampToValueAtTime(0.0001, at + 0.03);
+      n.connect(f).connect(e).connect(out);
+      n.start(at, Math.random());
+      n.stop(at + 0.05);
+    }
+    if (bayan) {
+      const o = ctx.createOscillator();
+      const press = b.startsWith("ka") ? 0 : 1;
+      o.frequency.setValueAtTime(this.saHz / 3.2, at);
+      o.frequency.exponentialRampToValueAtTime((this.saHz / 3.2) * (1 + 0.35 * press), at + 0.25);
+      const e = ctx.createGain();
+      const dec = press ? 0.7 : 0.08;
+      e.gain.setValueAtTime(0, at);
+      e.gain.linearRampToValueAtTime(0.9, at + 0.006);
+      e.gain.exponentialRampToValueAtTime(0.0001, at + dec);
+      o.connect(e).connect(out);
+      o.start(at);
+      o.stop(at + dec + 0.05);
+    }
+  }
+
+  /** Play teentaal's theka once (16 beats), calling back on each beat. */
+  theka(tempo: number, onBeat?: (i: number) => void) {
+    const bols = ["dha", "dhin", "dhin", "dha", "dha", "dhin", "dhin", "dha", "dha", "tin", "tin", "ta", "ta", "dhin", "dhin", "dha"];
+    const beat = 60 / tempo;
+    const t0 = this.now + 0.1;
+    bols.forEach((b, i) => {
+      this.tabla(b, t0 + i * beat, i === 0 ? 1.15 : 0.9);
+      if (onBeat) window.setTimeout(() => onBeat(i), (t0 + i * beat - this.now) * 1000);
+    });
+    if (onBeat) window.setTimeout(() => onBeat(-1), (t0 + 16 * beat - this.now) * 1000);
+    return 16 * beat;
   }
 
   /** A tiny pluck for UI feedback: a short, quiet harmonic of Sa. */

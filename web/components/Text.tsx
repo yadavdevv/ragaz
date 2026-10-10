@@ -39,7 +39,7 @@ export function ScrollWords({ children, className = "", dim = 0.16 }: { children
   return (
     <p ref={ref} className={className}>
       {children.split(" ").map((w, i) => (
-        <span key={i} data-w className={w.startsWith("*") ? "text-saffron" : ""}>{w.replace(/^\*/, "")} </span>
+        <span key={i} data-w className={w.startsWith("*") ? "italic text-sindoor" : ""}>{w.replace(/^\*/, "")} </span>
       ))}
     </p>
   );

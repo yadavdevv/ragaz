@@ -6,7 +6,7 @@ import Link from "next/link";
 import { type ReactNode, useRef } from "react";
 import { tick } from "@/lib/site";
 
-type Props = { children: ReactNode; onClick?: () => void; href?: string; variant?: "solid" | "line" | "dark" | "ink"; className?: string; cursor?: string; strength?: number; size?: "md" | "lg" };
+type Props = { children: ReactNode; onClick?: () => void; href?: string; variant?: "solid" | "line" | "dark" | "ink" | "night"; className?: string; cursor?: string; strength?: number; size?: "md" | "lg" };
 
 export function Magnetic({ children, onClick, href, variant = "line", className = "", cursor, strength = 0.35, size = "md" }: Props) {
   const ref = useRef<HTMLElement>(null);
@@ -23,13 +23,14 @@ export function Magnetic({ children, onClick, href, variant = "line", className 
     if (inner.current) inner.current.style.transform = "";
   };
   const styles = {
-    solid: "bg-saffron text-night border-saffron hover:bg-ivory hover:border-ivory",
-    line: "border-ivory/25 text-ivory hover:border-saffron hover:text-saffron",
-    dark: "bg-night text-ivory border-night hover:bg-ink",
-    ink: "border-ink/25 text-ink hover:border-ink hover:bg-ink hover:text-paper",
+    solid: "bg-sindoor text-paper border-sindoor hover:bg-kajal hover:border-kajal",
+    line: "border-kajal/25 text-kajal hover:border-sindoor hover:text-sindoor",
+    dark: "bg-kajal text-paper border-kajal hover:bg-sindoor hover:border-sindoor",
+    ink: "border-kajal/25 text-kajal hover:border-kajal hover:bg-kajal hover:text-paper",
+    night: "border-paper/30 text-paper hover:border-gulal hover:text-gulal",
   }[variant];
   const pad = size === "lg" ? "px-9 py-5 text-[18px]" : "px-6 py-3 text-[15px]";
-  const cls = `group inline-flex items-center gap-2 rounded-full border font-medium transition-[background,color,border-color,transform] duration-500 ease-out ${pad} ${styles} ${className}`;
+  const cls = `group inline-flex items-center gap-2 rounded-full border font-sans font-medium transition-[background,color,border-color,transform] duration-500 ease-out ${pad} ${styles} ${className}`;
   const content = <span ref={inner} className="inline-flex items-center gap-2 transition-transform duration-500 ease-out">{children}</span>;
   const click = () => {
     tick();
