@@ -1,0 +1,2 @@
+.N R G R | S - .N R | G M P - | M G R S |
+G M D N | S' - N D | P M G R | .N R S - |

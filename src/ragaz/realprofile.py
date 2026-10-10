@@ -1,0 +1,228 @@
+"""Style statistics measured from real performances (the v2, "real-grounded" reward).
+
+v1's style terms were guesses (a vadi-share band, a leap limit, literal textbook
+pakad strings). Checked against 26 concert recordings, real masters scored
+0.36–0.50 on them while the model scored 0.80–0.90 by over-using the "important"
+notes and almost never resting on Sa. v2 measures style from the recordings:
+
+  profile  time share of each of the 12 notes          (1 − Jensen–Shannon divergence)
+  motion   distribution of intervals between notes     (1 − JSD)
+  phrases  distinctive 4-note figures mined per raga   (weighted coverage)
+
+Each raw value is then *calibrated against real excerpts of the same length*: a
+piece as typical as the median real excerpt scores 1.0, so imitating real
+practice is rewarded and exaggerating it is not.
+
+Build once (needs the CompMusic features, see scripts/fetch_compmusic.py):
+
+    uv run python -m ragaz.realprofile
+"""
+
+import json
+import math
+import random
+from bisect import bisect_left, bisect_right
+from collections import Counter, defaultdict
+from functools import cache
+from pathlib import Path
+
+import numpy as np
+
+from ragaz.ragas import SWARAS
+
+FEATURES = Path("data/external/compmusic/features")
+PROFILES = Path("data/real_profiles.json")
+EXCERPT = 32
+NGRAM = 4
+MAX_INTERVAL = 12
+TOP_PHRASES = 60
+
+
+# ----------------------------------------------------------------- features
+
+
+def pc_distribution(notes: list[tuple[str, int, float]]) -> np.ndarray:
+    """Time share per pitch class. notes = (swara, octave, duration)."""
+    d = np.zeros(12)
+    for swara, _, duration in notes:
+        d[SWARAS.index(swara)] += duration
+    return d / d.sum() if d.sum() else d
+
+
+def interval_distribution(notes: list[tuple[str, int, float]]) -> np.ndarray:
+    d = np.zeros(2 * MAX_INTERVAL + 1)
+    pitch = [SWARAS.index(s) + 12 * o for s, o, _ in notes]
+    for a, b in zip(pitch, pitch[1:]):
+        if a != b:
+            d[int(np.clip(b - a, -MAX_INTERVAL, MAX_INTERVAL)) + MAX_INTERVAL] += 1
+    return d / d.sum() if d.sum() else d
+
+
+def ngrams(notes: list[tuple[str, int, float]]) -> set[str]:
+    pcs = [s for s, _, _ in notes]
+    return {" ".join(pcs[i : i + NGRAM]) for i in range(len(pcs) - NGRAM + 1)}
+
+
+def jsd(p: np.ndarray, q: np.ndarray) -> float:
+    """Jensen–Shannon divergence, base 2, in [0, 1]."""
+    m = (p + q) / 2
+
+    def kl(a: np.ndarray, b: np.ndarray) -> float:
+        mask = a > 0
+        return float(np.sum(a[mask] * np.log2(a[mask] / b[mask])))
+
+    return 0.5 * kl(p, m) + 0.5 * kl(q, m)
+
+
+# ------------------------------------------------------------------- build
+
+
+def recording_excerpts(raga: str) -> dict[str, list[list[tuple[str, int, float]]]]:
+    from ragaz.transcribe import load_pitch, load_tonic, transcribe
+
+    out = {}
+    for pitch in sorted((FEATURES / raga).glob("*.pitch")):
+        tonic = pitch.with_suffix(".tonicFine")
+        if not tonic.exists():
+            continue
+        times, hz = load_pitch(pitch)
+        notes = [(n.swara, n.octave, n.duration) for n in transcribe(times, hz, load_tonic(tonic))]
+        out[pitch.stem] = [notes[k : k + EXCERPT] for k in range(0, len(notes) - EXCERPT + 1, EXCERPT)]
+    return out
+
+
+def build(ragas: list[str], test_fraction: float = 0.3, seed: int = 0) -> dict:
+    rng = random.Random(seed)
+    excerpts, split = {}, {}
+    for raga in ragas:
+        recs = recording_excerpts(raga)
+        names = sorted(recs)
+        rng.shuffle(names)
+        n_test = max(1, round(len(names) * test_fraction))
+        split[raga] = {"test": sorted(names[:n_test]), "train": sorted(names[n_test:])}
+        excerpts[raga] = {name: recs[name] for name in names}
+
+    # Phrase statistics: how often each 4-note figure occurs per raga (train excerpts only).
+    counts: dict[str, Counter] = defaultdict(Counter)
+    totals: dict[str, int] = {}
+    for raga in ragas:
+        train = [e for name in split[raga]["train"] for e in excerpts[raga][name]]
+        for e in train:
+            counts[raga].update(ngrams(e))
+        totals[raga] = len(train)
+    vocab = set().union(*counts.values())
+
+    profiles = {"split": split, "ragas": {}}
+    for raga in ragas:
+        train = [e for name in split[raga]["train"] for e in excerpts[raga][name]]
+        pc = np.mean([pc_distribution(e) for e in train], axis=0)
+        iv = np.mean([interval_distribution(e) for e in train], axis=0)
+        # Distinctiveness: how much likelier a figure is in this raga than across all ragas.
+        phrases = {}
+        for g in vocab:
+            p_here = (counts[raga][g] + 1) / (totals[raga] + 2)
+            p_all = (sum(counts[r][g] for r in ragas) + 1) / (sum(totals.values()) + 2)
+            lift = p_here / p_all
+            if counts[raga][g] >= 5 and lift > 1.5:
+                phrases[g] = p_here * math.log(lift)
+        top = dict(sorted(phrases.items(), key=lambda kv: -kv[1])[:TOP_PHRASES])
+        profile = {"pc": pc.tolist(), "intervals": iv.tolist(), "phrases": top}
+        # Calibration: raw values on this raga's own training excerpts.
+        profile["calibration"] = {
+            "profile": sorted(jsd(pc_distribution(e), pc) for e in train),
+            "motion": sorted(jsd(interval_distribution(e), iv) for e in train),
+            "phrases": sorted(phrase_raw(e, top) for e in train),
+        }
+        profiles["ragas"][raga] = profile
+        names = [f"{g} ({w:.3f})" for g, w in list(top.items())[:5]]
+        print(f"{raga:<9} train {len(train)} excerpts · top phrases: {', '.join(names)}")
+    return profiles
+
+
+def phrase_raw(notes: list[tuple[str, int, float]], phrases: dict[str, float]) -> float:
+    found = ngrams(notes)
+    return sum(w for g, w in phrases.items() if g in found)
+
+
+# ------------------------------------------------------------------- score
+
+
+@cache
+def load_profiles(path: str = str(PROFILES)) -> dict | None:
+    p = Path(path)
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+def calibrated(value: float, real: list[float], higher_is_better: bool) -> float:
+    """Typicality vs real excerpts: the median real excerpt scores 1.0."""
+    if higher_is_better:
+        share_at_least_as_good = bisect_right(real, value) / len(real)  # real excerpts ≤ value
+    else:
+        share_at_least_as_good = (len(real) - bisect_left(real, value)) / len(real)  # real excerpts ≥ value
+    return min(1.0, 2 * share_at_least_as_good)
+
+
+def style_scores(notes: list[tuple[str, int, float]], raga: str) -> dict[str, float] | None:
+    profiles = load_profiles()
+    if not profiles or raga not in profiles["ragas"]:
+        return None
+    prof = profiles["ragas"][raga]
+    cal = prof["calibration"]
+    return {
+        "profile": calibrated(jsd(pc_distribution(notes), np.array(prof["pc"])), cal["profile"], higher_is_better=False),
+        "motion": calibrated(jsd(interval_distribution(notes), np.array(prof["intervals"])), cal["motion"], higher_is_better=False),
+        "phrases": calibrated(phrase_raw(notes, prof["phrases"]), cal["phrases"], higher_is_better=True),
+    }
+
+
+if __name__ == "__main__":
+    PROFILES.parent.mkdir(parents=True, exist_ok=True)
+    PROFILES.write_text(json.dumps(build(["bhupali", "yaman", "malkauns"])))
+    print(f"wrote {PROFILES}")
+
+
+# ------------------------------------------------- pooled profile (v3 reward)
+
+
+def real_pc(raga: str) -> np.ndarray | None:
+    profiles = load_profiles()
+    return np.array(profiles["ragas"][raga]["pc"]) if profiles and raga in profiles["ragas"] else None
+
+
+def realism(pieces: list[list[tuple[str, int, float]]], raga: str) -> float:
+    """1 − total-variation distance between the pooled note-time profile of many pieces
+    and the real profile. Stable (unlike one 32-note piece), so it's the metric that
+    picks checkpoints: v2's reward rose after step 20 while this fell."""
+    target = real_pc(raga)
+    if target is None:
+        return float("nan")  # no recordings for this raga
+    pooled = pc_distribution([n for p in pieces for n in p])
+    return 1 - 0.5 * float(np.abs(pooled - target).sum())
+
+
+def group_profile_ranks(pieces: list[list[tuple[str, int, float]]], raga: str) -> list[float]:
+    """Credit each piece by how much it moves its group's pooled profile toward real.
+
+    Leave-one-out: d_i = JSD(pool without i, real) − JSD(pool, real). Positive d_i means
+    the piece helps. Returned as ranks in [0, 1] (ties averaged), which is scale-free; GRPO
+    normalises within the group anyway. A group that all skips Pa rewards whoever uses it.
+    """
+    target = real_pc(raga)
+    if target is None:
+        return [1.0] * len(pieces)  # no recordings: neutral, the rulebook terms decide
+    full = jsd(pc_distribution([n for p in pieces for n in p]), target)
+    deltas = []
+    for i in range(len(pieces)):
+        rest = [n for j, p in enumerate(pieces) if j != i for n in p]
+        deltas.append(jsd(pc_distribution(rest), target) - full if rest else 0.0)
+    order = sorted(range(len(deltas)), key=lambda i: deltas[i])
+    ranks = [0.0] * len(deltas)
+    i = 0
+    while i < len(order):
+        j = i
+        while j + 1 < len(order) and deltas[order[j + 1]] == deltas[order[i]]:
+            j += 1
+        for k in range(i, j + 1):
+            ranks[order[k]] = ((i + j) / 2) / max(1, len(deltas) - 1)
+        i = j + 1
+    return ranks

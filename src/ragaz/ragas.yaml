@@ -1,0 +1,58 @@
+# Raga rules for v0. Notes are written as space-separated strings (not YAML lists)
+# so single letters like `n` are never misread as booleans.
+#
+# Swaras:  S r R g G m M P d D n N
+#   uppercase = shuddh, lowercase = komal, except: m = shuddh Ma, M = tivra Ma.
+#
+# Sources: standard Bhatkhande-system descriptions. Not yet reviewed by a musician.
+
+bhupali:
+  name: Bhupali
+  thaat: Kalyan
+  notes: "S R G P D"          # pentatonic: no Ma, no Ni
+  vadi: G
+  samvadi: D
+  nyas: "S G P D"             # notes phrases rest on
+  pakad: "G R S .D S R G | P G D P G R S"
+  time: early night (first prahar of night)
+  rasa: devotional, serene
+  tanpura: P
+
+yaman:
+  name: Yaman
+  thaat: Kalyan
+  notes: "S R G M P D N"      # Ma is only tivra (M), never shuddh (m)
+  vadi: G
+  samvadi: N
+  nyas: "R G P N"
+  pakad: ".N R G R S | P M G R S"
+  time: early evening (first prahar of night)
+  rasa: romantic, devotional
+  tanpura: P
+
+malkauns:
+  name: Malkauns
+  thaat: Bhairavi
+  notes: "S g m d n"          # komal Ga/Dha/Ni, no Re, no Pa
+  vadi: m
+  samvadi: S
+  nyas: "S g m d"
+  pakad: "m g m d m g S | .n S g m g S"
+  time: late night (third prahar of night)
+  rasa: meditative, heroic
+  tanpura: m                  # no Pa in the raga, so the first string is tuned to Ma
+
+deshkar:
+  # Same five notes as Bhupali; identity is in emphasis and movement, not the scale.
+  # Sources: indianclassicalmusic.com/deshkaar, darbar.org/raga/deshkar (2026-10-09).
+  # No recordings in our CompMusic subset, so its style comes from these rules alone.
+  name: Deshkar
+  thaat: Bilawal
+  notes: "S R G P D"          # Re is weak, often skipped going up
+  vadi: D
+  samvadi: G
+  nyas: "S G P D"             # Pa is the characteristic resting note
+  pakad: "P D G P | S' D P D G P G R S"
+  time: morning (first prahar of day)
+  rasa: heroic, bright
+  tanpura: P
