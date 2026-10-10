@@ -1,0 +1,148 @@
+{
+ "ragas": [
+  {
+   "key": "bhupali",
+   "name": "Bhupali",
+   "devanagari": "भूपाली",
+   "thaat": "Kalyan",
+   "notes": [
+    0,
+    2,
+    4,
+    7,
+    9
+   ],
+   "swaras": [
+    "S",
+    "R",
+    "G",
+    "P",
+    "D"
+   ],
+   "vadi": "G",
+   "samvadi": "D",
+   "nyas": [
+    "S",
+    "G",
+    "P",
+    "D"
+   ],
+   "pakad": "G R S .D S R G | P G D P G R S",
+   "time": "early night (first prahar of night)",
+   "hours": [
+    19,
+    22
+   ],
+   "rasa": "devotional, serene",
+   "tanpura": "P"
+  },
+  {
+   "key": "yaman",
+   "name": "Yaman",
+   "devanagari": "यमन",
+   "thaat": "Kalyan",
+   "notes": [
+    0,
+    2,
+    4,
+    6,
+    7,
+    9,
+    11
+   ],
+   "swaras": [
+    "S",
+    "R",
+    "G",
+    "M",
+    "P",
+    "D",
+    "N"
+   ],
+   "vadi": "G",
+   "samvadi": "N",
+   "nyas": [
+    "R",
+    "G",
+    "P",
+    "N"
+   ],
+   "pakad": ".N R G R S | P M G R S",
+   "time": "early evening (first prahar of night)",
+   "hours": [
+    18,
+    21
+   ],
+   "rasa": "romantic, devotional",
+   "tanpura": "P"
+  },
+  {
+   "key": "malkauns",
+   "name": "Malkauns",
+   "devanagari": "मालकौंस",
+   "thaat": "Bhairavi",
+   "notes": [
+    0,
+    3,
+    5,
+    8,
+    10
+   ],
+   "swaras": [
+    "S",
+    "g",
+    "m",
+    "d",
+    "n"
+   ],
+   "vadi": "m",
+   "samvadi": "S",
+   "nyas": [
+    "S",
+    "g",
+    "m",
+    "d"
+   ],
+   "pakad": "m g m d m g S | .n S g m g S",
+   "time": "late night (third prahar of night)",
+   "hours": [
+    0,
+    3
+   ],
+   "rasa": "meditative, heroic",
+   "tanpura": "m"
+  }
+ ],
+ "equation": {
+  "gates": [
+   "format",
+   "allowed²",
+   "beats²",
+   "variety",
+   "length"
+  ],
+  "weights": {
+   "tala": 0.2,
+   "profile": 0.35,
+   "motion": 0.1,
+   "phrases": 0.35
+  }
+ },
+ "models": [
+  {
+   "label": "v2",
+   "run": "track-b-v2-20261008-2148",
+   "step": 20
+  },
+  {
+   "label": "v1",
+   "run": "track-b-v1-20261008-0122",
+   "step": 100
+  },
+  {
+   "label": "sft",
+   "run": "track-b-v1-20261008-0122",
+   "step": 0
+  }
+ ]
+}
