@@ -1,0 +1,38 @@
+# v3 reward: hard rules + real-mined phrases + motion, with the note profile scored per
+# GRPO group (leave-one-out pull of the pooled profile toward real). Checkpoints are picked
+# by score × realism, because v2's reward kept rising after its music stopped improving.
+# Starts from v2 step 20, the most realistic model so far.
+name: track-b-v3
+model: mlx-community/Qwen3-0.6B-bf16
+tracker: trackio
+init_adapter: runs/grpo/track-b-v2-20261008-2148/checkpoints/closest-to-real
+
+steps: 80
+prompts_per_step: 4
+group_size: 8
+temperature: 1.0
+max_tokens: 120
+
+lr: 1.0e-5
+warmup_steps: 5
+beta: 0.04
+lora_rank: 16
+lora_layers: 16
+duplicate_penalty: 0.5
+novelty_ref: data/distilled.jsonl
+novelty_weight: 0.3
+reward_style: v3
+group_profile_weight: 0.4
+
+hint_start: 0.1
+hint_end: 0.0
+hint_decay_steps: 20
+
+eval_every: 10
+eval_samples: 16
+save_every: 10
+best_metric: eval/bare/real_score
+micro_batch: 2
+gen_batch: 8
+memory_gb: 5
+hard_memory_gb: 8

@@ -1,0 +1,29 @@
+# First real GRPO run: Qwen3-0.6B + LoRA on a 24 GB M4 Pro, sized to leave room for other apps.
+# Every field is documented in src/ragaz/config.py. Override with --set key=value.
+name: grpo-0.6b
+model: mlx-community/Qwen3-0.6B-bf16
+tracker: trackio
+
+steps: 200
+prompts_per_step: 4
+group_size: 8          # 32 completions per step
+temperature: 1.0
+max_tokens: 120        # 8 bars fit in ~70 tokens; shorter limit cuts rambling sooner
+
+lr: 1.0e-5             # run 1 at 2e-5 drifted fast (KL 1.7 by step 10)
+warmup_steps: 10
+beta: 0.04             # stronger pull back toward the base model
+lora_rank: 16
+lora_layers: 16
+
+hint_start: 1.0        # start with the raga's notes in every prompt...
+hint_end: 0.3          # ...and remove them from 70% of prompts by step 150
+hint_decay_steps: 150
+
+eval_every: 20
+eval_samples: 16
+save_every: 10
+micro_batch: 2
+gen_batch: 8
+memory_gb: 5
+hard_memory_gb: 8

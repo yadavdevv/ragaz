@@ -1,0 +1,31 @@
+# Track A (product): the prompt always carries the raga's rules from ragas.yaml.
+# Run 2 showed hinted prompts reach ~0.92 in 20 steps; this run adds the duplicate
+# penalty (against collapse) and the 8-bar requirement.
+name: track-a-hinted
+model: mlx-community/Qwen3-0.6B-bf16
+tracker: trackio
+
+steps: 100
+prompts_per_step: 4
+group_size: 8
+temperature: 1.0
+max_tokens: 120
+
+lr: 1.0e-5
+warmup_steps: 10
+beta: 0.04
+lora_rank: 16
+lora_layers: 16
+duplicate_penalty: 0.5
+
+hint_start: 1.0        # always hinted
+hint_end: 1.0
+
+eval_every: 20
+eval_samples: 16
+save_every: 10
+best_metric: eval/hinted/reward
+micro_batch: 2
+gen_batch: 8
+memory_gb: 5
+hard_memory_gb: 8

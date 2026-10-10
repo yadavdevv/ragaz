@@ -1,0 +1,34 @@
+# v1 reward: rules + signature phrases (pakad) + novelty bonus, from the Track B SFT
+# checkpoint (which writes all three ragas from the name alone at ~0.95 on v0 rules).
+name: track-b-v1
+model: mlx-community/Qwen3-0.6B-bf16
+tracker: trackio
+init_adapter: runs/grpo/track-b-sft-20261008-0112/checkpoints/best
+
+steps: 100
+prompts_per_step: 4
+group_size: 8
+temperature: 1.0
+max_tokens: 120
+
+lr: 1.0e-5
+warmup_steps: 10
+beta: 0.04
+lora_rank: 16
+lora_layers: 16
+duplicate_penalty: 0.5
+novelty_ref: data/distilled.jsonl
+novelty_weight: 0.3       # memorised-only pieces get ×0.7
+
+hint_start: 0.2
+hint_end: 0.0
+hint_decay_steps: 50
+
+eval_every: 20
+eval_samples: 16
+save_every: 10
+best_metric: eval/bare/reward
+micro_batch: 2
+gen_batch: 8
+memory_gb: 5
+hard_memory_gb: 8

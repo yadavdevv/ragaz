@@ -1,0 +1,30 @@
+# Anchor names to styles: SFT on name-only prompts → v4 step-60 pieces (twin-filtered).
+# v4 learned Deshkar with hints, then forgot it once hints faded; SFT teaches the fact.
+name: v4-sft
+model: mlx-community/Qwen3-0.6B-bf16
+tracker: trackio
+init_adapter: runs/grpo/v4-hybrid-20261009-2228/checkpoints/best-twin
+ragas: [bhupali, yaman, malkauns, deshkar]
+reward_style: v4
+
+sft_data: data/distilled_v4.jsonl
+sft_epochs: 2
+sft_variants: [bare]
+prompts_per_step: 4
+group_size: 4            # SFT batch 16
+
+lr: 5.0e-5               # gentler than the first SFT (1e-4): the model is already close
+warmup_steps: 5
+beta: 0.0
+lora_rank: 16
+lora_layers: 16
+max_tokens: 120
+
+eval_every: 10
+eval_samples: 16
+save_every: 10
+best_metric: eval/bare/real_twin_score
+micro_batch: 4
+gen_batch: 8
+memory_gb: 5
+hard_memory_gb: 8

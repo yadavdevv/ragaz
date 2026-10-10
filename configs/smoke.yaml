@@ -1,0 +1,18 @@
+# Three tiny steps to check the whole loop end to end, with a small memory footprint.
+name: smoke
+model: mlx-community/Qwen3-0.6B-bf16
+tracker: trackio
+project: ragaz-smoke
+steps: 3
+prompts_per_step: 2
+group_size: 4          # 8 completions per step
+max_tokens: 160
+beta: 0.0              # no reference model copy: saves ~1.2 GB
+lora_layers: 16
+eval_every: 3
+eval_samples: 2
+save_every: 3
+micro_batch: 2         # 2 sequences per forward/backward
+gen_batch: 8
+memory_gb: 4
+hard_memory_gb: 6      # watchdog kills the run above this

@@ -1,0 +1,39 @@
+# v4: rulebook + real music together. Rulebook = forbidden-note purity, vadi/samvadi
+# rank, textbook pakad, tala. Real = mined phrases, motion, group note profile.
+# Adds Deshkar: same notes as Bhupali, no recordings, so its identity comes from the
+# rulebook alone. Starts from v3's best (step 80).
+name: v4-hybrid
+model: mlx-community/Qwen3-0.6B-bf16
+tracker: trackio
+init_adapter: runs/grpo/track-b-v3-20261008-2341/checkpoints/best
+ragas: [bhupali, yaman, malkauns, deshkar]
+
+steps: 80
+prompts_per_step: 4      # one prompt per raga each step
+group_size: 8
+temperature: 1.0
+max_tokens: 120
+
+lr: 1.0e-5
+warmup_steps: 5
+beta: 0.04
+lora_rank: 16
+lora_layers: 16
+duplicate_penalty: 0.5
+novelty_ref: data/distilled.jsonl
+novelty_weight: 0.3
+reward_style: v4
+group_profile_weight: 0.4
+
+hint_start: 0.5          # Deshkar is new: hints (vadi Dha, samvadi Ga) help at first
+hint_end: 0.1
+hint_decay_steps: 60
+
+eval_every: 10
+eval_samples: 16
+save_every: 10
+best_metric: eval/bare/real_score
+micro_batch: 2
+gen_batch: 8
+memory_gb: 5
+hard_memory_gb: 8
