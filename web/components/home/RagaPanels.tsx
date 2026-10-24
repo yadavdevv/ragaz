@@ -20,11 +20,13 @@ const BLURB: Record<string, string> = {
   bhupali: "Five notes and no tension: no Ma, no Ni. Sung as the night begins; calm, devotional, open.",
   yaman: "Every note natural except a sharp Ma. The first raga most students learn, sung at dusk.",
   malkauns: "Flat Ga, Dha and Ni, and no Re or Pa at all. Deep, slow, meditative: a raga for after midnight.",
+  deshkar: "The same five notes as Bhupali, yet a different raga: it leans on Dha and rests on Pa, and is sung in the morning, bright and heroic.",
 };
 const TONES = [
   { bg: "wasli", fg: "text-kajal", sub: "text-sepia", line: "ink" as const, tile: "border-kajal/15", on: "bg-kajal text-paper border-kajal", btn: "ink" as const, plate: "paper" as const },
   { bg: "bg-gulal", fg: "text-kajal", sub: "text-kajal/70", line: "ink" as const, tile: "border-kajal/20", on: "bg-kajal text-paper border-kajal", btn: "dark" as const, plate: "gulal" as const },
   { bg: "night-sky", fg: "text-paper", sub: "text-paper/65", line: "gulal" as const, tile: "border-paper/20", on: "bg-gulal text-kajal border-gulal", btn: "night" as const, plate: "night" as const },
+  { bg: "bg-paper2", fg: "text-kajal", sub: "text-sepia", line: "ink" as const, tile: "border-kajal/15", on: "bg-sindoor text-paper border-sindoor", btn: "ink" as const, plate: "paper" as const },
 ];
 
 function NoteTiles({ raga, tone }: { raga: Raga; tone: (typeof TONES)[number] }) {
@@ -67,7 +69,7 @@ export function RagaPanels({ data }: { data: Data }) {
   const wrap = useRef<HTMLDivElement>(null);
   const strip = useRef<HTMLDivElement>(null);
   const current = useSite((s) => (s.playing ? s.track?.id : null));
-  const ragas = ["bhupali", "yaman", "malkauns"].map((k) => data.ragas.find((r) => r.key === k)!);
+  const ragas = ["bhupali", "yaman", "malkauns", "deshkar"].map((k) => data.allRagas.find((r) => r.key === k)!);
   const pakads: Track[] = useMemo(() => ragas.map((r) => ({ id: `pakad-${r.key}`, title: `${r.name} · its signature phrase`, sub: "the pakad, the phrase a listener recognises it by", raga: r.key, notes: parse(r.pakad).notes })), [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -95,7 +97,7 @@ export function RagaPanels({ data }: { data: Data }) {
               <span className={`pointer-events-none absolute inset-[22px] border ${i === 2 ? "border-paper/10" : "border-kajal/10"}`} />
               <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:gap-10">
                 <div>
-                  <div className={`flex items-center gap-3 font-sans text-[12px] uppercase tracking-[0.24em] ${tone.sub}`}><Folio n={5} /> Raga {i + 1} of 3 · {r.time.split(" (")[0]}</div>
+                  <div className={`flex items-center gap-3 font-sans text-[12px] uppercase tracking-[0.24em] ${tone.sub}`}><Folio n={6} /> Raga {i + 1} of 4 · {r.time.split(" (")[0]}</div>
                   <h2 className="mt-3 font-display text-[clamp(72px,10.5vw,180px)] leading-[0.86]">{r.name}</h2>
                   <div className={`mt-3 font-deva text-[clamp(28px,3.2vw,46px)] ${tone.sub}`}>{r.devanagari}</div>
                   <p className={`mt-6 hidden max-w-[34ch] text-[19px] leading-[1.55] lg:block ${tone.sub}`}>{BLURB[r.key]}</p>

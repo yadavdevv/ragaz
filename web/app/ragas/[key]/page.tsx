@@ -20,6 +20,7 @@ const NAMES: Record<string, string> = { S: "Sa", r: "Re", R: "Re", g: "Ga", G: "
 const ABOUT: Record<string, { mood: string; text: string[] }> = {
   bhupali: { mood: "Calm, devotional, open", text: ["Bhupali uses only five notes. Without Ma and Ni there are no half-step tensions, so it sounds bright and settled.", "Ga is its most important note and Dha the second. Phrases often fall back to Sa through Re: Ga Re Sa."] },
   yaman: { mood: "Romantic, serene", text: ["Yaman uses all seven notes, with Ma raised (tivra). That sharp Ma gives it its yearning colour.", "Ga and Ni carry the weight. Phrases often begin from the lower Ni: Ni Re Ga."] },
+  deshkar: { mood: "Bright, heroic", text: ["Deshkar uses exactly Bhupali's five notes, Sa Re Ga Pa Dha, yet it is a different raga. Re is weak and often skipped on the way up, Dha is its most important note, and phrases come to rest on Pa.", "It is sung in the morning. There are no recordings of it in our reference set, so the model learned it from the rules and from examples alone."] },
   malkauns: { mood: "Meditative, grave", text: ["Malkauns has five notes and none of them are Re or Pa. Ga, Dha and Ni are flat (komal).", "Because there's no Pa, the tanpura's first string is tuned to Ma instead. Ma is its most important note."] },
 };
 
@@ -29,14 +30,15 @@ export default function RagaPage() {
   const playing = useSite((s) => (s.playing ? s.track?.id : null));
   const curveTag = useSite((s) => s.curveTag);
   const [lit, setLit] = useState<number | null>(null);
-  const raga = data?.ragas.find((r) => r.key === key);
+  const raga = data?.allRagas.find((r) => r.key === key);
   const pakad: Track | null = useMemo(() => (raga ? { id: `pakad-${raga.key}`, title: `${raga.name} · signature phrase`, sub: "the pakad", raga: raga.key, notes: parse(raga.pakad).notes } : null), [raga]);
   if (!data || !raga || !pakad) return null;
-  const m = data.masters.ragas[raga.key];
+  const m = data.masters.ragas[raga.key] as (typeof data.masters.ragas)[string] | undefined;
   const voice = data.voices.find((v) => v.raga === raga.key);
+  const newest = data.latest.pieces.filter((p) => p.raga === raga.key).sort((a, b) => b.reward - a.reward).slice(0, 3).map((p) => pieceTrack(p));
   const pieces = data.pieces.filter((p) => p.raga === raga.key && p.model === "v2").sort((a, b) => b.reward - a.reward).slice(0, 3).map((p) => pieceTrack(p));
-  const order = ["bhupali", "yaman", "malkauns"];
-  const next = data.ragas.find((r) => r.key === order[(order.indexOf(raga.key) + 1) % 3])!;
+  const order = ["bhupali", "yaman", "malkauns", "deshkar"];
+  const next = data.allRagas.find((r) => r.key === order[(order.indexOf(raga.key) + 1) % order.length])!;
   const tap = async (pc: number) => {
     const eng = getEngine();
     await eng.resume();
@@ -53,9 +55,9 @@ export default function RagaPage() {
         <div className="mx-auto grid max-w-[1400px] items-end gap-12 lg:grid-cols-[1fr_auto]">
         <div>
           <div className="flex flex-wrap items-center gap-3 text-[14px]">
-            {order.map((k) => <Link key={k} href={`/ragas/${k}`} className={`rounded-full border px-4 py-1.5 ${k === raga.key ? "border-kajal bg-kajal text-paper" : "border-kajal/20 hover:border-kajal"}`}>{data.ragas.find((r) => r.key === k)!.name}</Link>)}
+            {order.map((k) => <Link key={k} href={`/ragas/${k}`} className={`rounded-full border px-4 py-1.5 ${k === raga.key ? "border-kajal bg-kajal text-paper" : "border-kajal/20 hover:border-kajal"}`}>{data.allRagas.find((r) => r.key === k)!.name}</Link>)}
           </div>
-          <h1 className="mt-10 font-display text-[clamp(96px,19vw,330px)] leading-[0.78]"><RiseChars text={raga.name} step={45} /></h1>
+          <h1 className="mt-10 font-display text-[clamp(72px,13vw,230px)] leading-[0.82]"><RiseChars text={raga.name} step={45} /></h1>
           <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
             <div className="font-deva text-[clamp(32px,4vw,56px)] text-kajal/60">{raga.devanagari}</div>
             <div className="grid grid-cols-3 gap-10 text-[15px]">
@@ -117,7 +119,7 @@ export default function RagaPage() {
         </section>
       )}
 
-      <section className="bg-paper2/70 px-6 py-28 sm:px-10">
+      {m && <section className="bg-paper2/70 px-6 py-28 sm:px-10">
         <div className="mx-auto grid max-w-[1400px] gap-16 lg:grid-cols-[1fr_1.2fr]">
           <Reveal>
             <div className="text-[12px] uppercase tracking-[0.24em] text-sepia">How real singers use it</div>
@@ -138,15 +140,19 @@ export default function RagaPage() {
                 </Reveal>
               );
             })}
-            <div className="pt-2 font-sans text-[14px] text-sepia"><span className="text-kajal">indigo: real singers</span> · <span className="text-gulal">yellow: the model</span></div>
+            <div className="pt-2 font-sans text-[14px] text-sepia"><span className="text-kajal">outline: real singers</span> · <span className="text-gulal">light red: the model</span></div>
           </div>
         </div>
-      </section>
+      </section>}
 
       <section className="px-6 py-28 sm:px-10">
         <div className="mx-auto max-w-[1400px]">
-          <div className="text-[12px] uppercase tracking-[0.24em] text-sepia">The model's best {raga.name}</div>
-          <div className="mt-8 grid gap-5 lg:grid-cols-3">{pieces.map((t) => <PieceCard key={t.id} track={t} queue={pieces} />)}</div>
+          <div className="text-[12px] uppercase tracking-[0.24em] text-sepia">The newest model's best {raga.name} · 16 bars</div>
+          <div className="mt-8 grid gap-5 lg:grid-cols-3">{newest.map((t) => <PieceCard key={t.id} track={t} queue={newest} />)}</div>
+          {pieces.length > 0 && <>
+            <div className="mt-16 text-[12px] uppercase tracking-[0.24em] text-sepia">The earlier model (v2) · 8 bars</div>
+            <div className="mt-8 grid gap-5 lg:grid-cols-3">{pieces.map((t) => <PieceCard key={t.id} track={t} queue={pieces} />)}</div>
+          </>}
         </div>
       </section>
 

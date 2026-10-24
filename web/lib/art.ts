@@ -26,6 +26,17 @@ export const PAINTINGS: Record<string, Painting> = {
     url: "https://www.rijksmuseum.nl/en/collection/object/Bhupala-Raga--5c3fdbf173e328884b5d86311a3cb411",
     note: "A ruler under a canopy at nightfall, attended by whisk-bearers. Verses from the Ragasagara run along the top.",
   },
+  deshkar: {
+    src: "/art/deshkar.jpg",
+    title: "Vilaval Ragini",
+    place: "Rajasthan, Sirohi",
+    date: "c. 1680",
+    museum: "The Metropolitan Museum of Art",
+    credit: "Gift of Cynthia Hazen Polsky, 1985",
+    licence: "Public domain (CC0)",
+    url: "https://www.metmuseum.org/art/collection/search/37854",
+    note: "Morning: the sun rises over a pavilion as a woman adorns herself before a mirror. Deshkar is a morning raga of the Bilawal (Vilaval) family.",
+  },
   yaman: {
     src: "/art/yaman.jpg",
     title: "Kalyan Ragini",
