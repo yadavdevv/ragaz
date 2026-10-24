@@ -1,7 +1,7 @@
 "use client";
 
 // The newest model (v5e): its 16-bar pieces as actual recordings (rendered on the Mac with the
-// learned DDSP violin, or the expressive synth), with the notation lit in sync with the audio.
+// learned DDSP voice of Carnatic women singers, or the flute synth), with the notation lit in sync.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bhatkhande } from "@/components/Bhatkhande";
@@ -18,7 +18,7 @@ const INTRO = 3.0; // seconds of tanpura before the first note (ragaz render --i
 export function Newest({ data }: { data: Data }) {
   const L = data.latest;
   const [rk, setRk] = useState("yaman");
-  const [voice, setVoice] = useState<"violin" | "expressive">("violin");
+  const [voice, setVoice] = useState<"vocal" | "expressive">("vocal");
   const [playing, setPlaying] = useState(false);
   const [t, setT] = useState(0);
   const audio = useRef<HTMLAudioElement>(null);
@@ -106,8 +106,8 @@ export function Newest({ data }: { data: Data }) {
                     <div className="mt-1 font-sans text-[13.5px] text-sepia">{rec.bars} bars · {rec.tempo} bpm · {Math.floor(t / 60)}:{String(Math.floor(t % 60)).padStart(2, "0")}{head !== null && head < 0 ? " · tanpura first" : ""}</div>
                   </div>
                   <div className="flex rounded-full border border-rule p-1 font-sans text-[14px]">
-                    {(["violin", "expressive"] as const).map((v) => (
-                      <button key={v} onClick={() => { tick("soft"); setVoice(v); }} className={`rounded-full px-4 py-1.5 transition ${voice === v ? "bg-kajal text-paper" : "text-kajal"}`}>{v === "violin" ? "Violin" : "Synth"}</button>
+                    {(["vocal", "expressive"] as const).map((v) => (
+                      <button key={v} onClick={() => { tick("soft"); setVoice(v); }} className={`rounded-full px-4 py-1.5 transition ${voice === v ? "bg-kajal text-paper" : "text-kajal"}`}>{v === "vocal" ? "Voice" : "Flute"}</button>
                     ))}
                   </div>
                 </div>
@@ -122,7 +122,7 @@ export function Newest({ data }: { data: Data }) {
               </div>
             </Hashiya>
             <p className="mt-5 max-w-[80ch] font-sans text-[13px] leading-[1.6] text-sepia">
-              {voice === "violin" ? `Violin: ${L.voices.violin}.` : `Synth: ${L.voices.expressive}.`} Rendered on the Mac from the model's notation; the notes are exactly what it wrote. Run {rec.run}, step {rec.step}{rec.reward !== null ? `, scored ${rec.reward.toFixed(2)} by its v5 reward` : ""}.
+              {voice === "vocal" ? `Voice: ${L.voices.vocal}.` : `Flute: ${L.voices.expressive}.`} Rendered on the Mac from the model's notation; the notes are exactly what it wrote. Run {rec.run}, step {rec.step}{rec.reward !== null ? `, scored ${rec.reward.toFixed(2)} by its v5 reward` : ""}.
             </p>
           </div>
           <div className="space-y-6">

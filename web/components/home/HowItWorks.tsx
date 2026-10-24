@@ -47,8 +47,19 @@ export function HowItWorks({ data }: { data: Data }) {
   const d = pathFrom(linePoints(piece.notes, (t) => (t / end) * W, (s) => 10 + (1 - (s - lo) / (hi - lo)) * (H - 20)));
   const mean = group.reduce((a, b) => a + b, 0) / group.length;
   const tokens = piece.notation.split(" ");
-  const ring = [{ x: 90, y: 90 }, { x: 450, y: 70 }, { x: 500, y: 330 }, { x: 300, y: 450 }, { x: 70, y: 330 }];
-  const loopPath = `M ${ring[0].x} ${ring[0].y} C 250 20, 380 20, ${ring[1].x} ${ring[1].y} S 600 230, ${ring[2].x} ${ring[2].y} S 400 470, ${ring[3].x} ${ring[3].y} S 40 420, ${ring[4].x} ${ring[4].y} S 40 150, ${ring[0].x} ${ring[0].y}`;
+  // five steps on a pentagon around the edge, clear of the card in the middle
+  const ring = [{ x: 300, y: 38 }, { x: 548, y: 205 }, { x: 468, y: 466 }, { x: 132, y: 466 }, { x: 52, y: 205 }];
+  const LABEL = [{ dx: 0, dy: -20, a: "middle" }, { dx: 0, dy: -22, a: "middle" }, { dx: 0, dy: 34, a: "middle" }, { dx: 0, dy: 34, a: "middle" }, { dx: 0, dy: -22, a: "middle" }] as const;
+  const loopPath = (() => {
+    // closed Catmull-Rom spline through the five nodes
+    const n = ring.length, k = 1 / 6;
+    let d = `M ${ring[0].x} ${ring[0].y}`;
+    for (let i = 0; i < n; i++) {
+      const p0 = ring[(i - 1 + n) % n], p1 = ring[i], p2 = ring[(i + 1) % n], p3 = ring[(i + 2) % n];
+      d += ` C ${p1.x + (p2.x - p0.x) * k} ${p1.y + (p2.y - p0.y) * k}, ${p2.x - (p3.x - p1.x) * k} ${p2.y - (p3.y - p1.y) * k}, ${p2.x} ${p2.y}`;
+    }
+    return d;
+  })();
   const pathRef = useRef<SVGPathElement>(null);
   const [tok, setTok] = useState({ x: ring[0].x, y: ring[0].y });
   useEffect(() => {
@@ -84,15 +95,15 @@ export function HowItWorks({ data }: { data: Data }) {
             {ring.map((r, i) => (
               <g key={i}>
                 <circle cx={r.x} cy={r.y} r={i <= step ? 10 : 7} fill={i <= step ? "#B23A22" : "#F1E6CF"} stroke="#B23A22" strokeWidth="1.5" style={{ transition: "all .5s" }} />
-                <text x={r.x} y={r.y - 20} textAnchor="middle" fontSize="16" fontFamily="var(--font-display)" fill={i === step ? "#131A2B" : "#4A5166"}>{STEPS[i].t}</text>
+                <text x={r.x + LABEL[i].dx} y={r.y + LABEL[i].dy} textAnchor={LABEL[i].a} fontSize="17" fontFamily="var(--font-display)" fill={i === step ? "#131A2B" : "#4A5166"}>{STEPS[i].t}</text>
               </g>
             ))}
             <circle cx={tok.x} cy={tok.y} r="24" fill="#D9705A" fillOpacity="0.25" />
             <circle cx={tok.x} cy={tok.y} r="7" fill="#131A2B" />
           </svg>
 
-          <Hashiya className="absolute left-1/2 top-1/2 w-[72%] -translate-x-1/2 -translate-y-1/2" corners={false}>
-            <div className="leaf-card p-6">
+          <Hashiya className="absolute left-1/2 top-1/2 w-[56%] -translate-x-1/2 -translate-y-1/2" corners={false}>
+            <div className="leaf-card p-5">
               {step === 0 && (
                 <div>
                   <div className="font-sans text-[12px] uppercase tracking-[0.2em] text-sindoor">prompt</div>
@@ -123,9 +134,9 @@ export function HowItWorks({ data }: { data: Data }) {
               {step === 3 && (
                 <div>
                   <div className="font-sans text-[12px] uppercase tracking-[0.2em] text-sindoor">the score</div>
-                  <div className="mt-2 flex items-end justify-between">
-                    <div className="font-display text-[84px] leading-none text-kajal tabular-nums">{(piece.reward * Math.min(1, local * 1.4)).toFixed(2)}</div>
-                    <div className="space-y-1.5 pb-2 text-[16px] text-kajal">
+                  <div className="mt-2 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+                    <div className="font-display text-[64px] leading-none text-kajal tabular-nums">{(piece.reward * Math.min(1, local * 1.4)).toFixed(2)}</div>
+                    <div className="space-y-1 pb-1 text-[15px] text-kajal">
                       {["Every note in Bhupali", "Four beats in every bar", "No loops", "Sounds like real singers"].map((c, i) => (
                         <div key={c} className={`transition-all duration-500 ${local > i * 0.2 ? "opacity-100" : "translate-x-3 opacity-0"}`}><span className="text-sindoor">✓</span> {c}</div>
                       ))}

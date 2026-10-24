@@ -63,7 +63,7 @@ export default function Docs() {
             </article>
             <article id="audio">
               <h2 className="font-display text-[56px] leading-none text-kajal">Sound</h2>
-              <p className="mt-6">Nothing here is a recording. Your browser reads the notation and sings it with a small synthesiser: a voice shaped by the formants of an open “aa” (aakar), sliding between notes, tuned in just intonation over a four-string tanpura drone. A flute is available in the full-screen player. The real singers' lines are resynthesised from pitch tracks of concert recordings with the same voice; no recorded audio is used.</p>
+              <p className="mt-6">Nothing here is a recording. Your browser reads the notation and sings it with a small synthesiser: a voice shaped by the formants of an open “aa” (aakar), sliding between notes, tuned in just intonation over a four-string tanpura drone. A flute is available in the full-screen player. The newest model's recordings were rendered on a Mac with a learned voice: a DDSP model (Engel et al., 2020) trained on 65 minutes of separately miked vocal tracks from 12 women singers in Saraga Carnatic concerts (Zenodo 10.5281/zenodo.4301737, CC BY-NC-SA 4.0). It is given only pitch and loudness, so every note and glide it sings is the model's. The real singers' lines are resynthesised from pitch tracks of concert recordings with the same voice; no recorded audio is used.</p>
             </article>
             <article id="images">
               <h2 className="font-display text-[56px] leading-none text-kajal">Images</h2>
