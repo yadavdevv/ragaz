@@ -3,6 +3,7 @@ import { Inter, Newsreader, Tiro_Devanagari_Hindi } from "next/font/google";
 import "katex/dist/katex.min.css";
 import { Cursor } from "@/components/Cursor";
 import { Nav } from "@/components/Nav";
+import { PageFrame } from "@/components/Ornament";
 import { Player } from "@/components/Player";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import "./globals.css";
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SmoothScroll />
         <Nav />
         {children}
+        <PageFrame />
         <Player />
         <Cursor />
       </body>

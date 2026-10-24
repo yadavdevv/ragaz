@@ -24,7 +24,9 @@ export default {
       fontFamily: {
         display: ["var(--font-display)", "serif"],
         serif: ["var(--font-serif)", "Georgia", "serif"],
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        // small UI text is set in the book serif too: no modern sans on the page
+        sans: ["var(--font-serif)", "Georgia", "serif"],
+        ui: ["var(--font-sans)", "system-ui", "sans-serif"],
         deva: ["var(--font-display)", "serif"],
         mono: ["ui-monospace", "SFMono-Regular", "monospace"],
       },

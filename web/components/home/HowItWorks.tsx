@@ -62,7 +62,7 @@ export function HowItWorks({ data }: { data: Data }) {
     <section id="how" ref={wrap} className="wasli relative overflow-hidden lg:h-[100svh]">
       <div className="relative mx-auto grid h-full max-w-[1400px] items-center gap-10 px-6 py-24 sm:px-10 lg:grid-cols-[0.9fr_1.1fr] lg:py-0 lg:pt-20">
         <div>
-          <div className="flex items-center gap-4"><Folio n={6} /><Rubric>How it learned</Rubric></div>
+          <div className="flex items-center gap-4"><Folio n={8} /><Rubric>How it learned</Rubric></div>
           <h2 className="mt-6 font-display text-[clamp(42px,5.6vw,88px)] leading-[0.95] text-kajal">Write. Get scored.<br /><span className="italic text-sindoor">Do it again.</span></h2>
           <ol className="mt-10">
             {STEPS.map((s, i) => (

@@ -21,7 +21,7 @@ export function ListenRail({ data }: { data: Data }) {
     <section className="relative overflow-hidden py-28">
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-end justify-between gap-6 px-6 sm:px-10">
         <Reveal>
-          <div className="flex items-center gap-4"><Folio n={4} /><Rubric>Listen</Rubric></div>
+          <div className="flex items-center gap-4"><Folio n={5} /><Rubric>Listen</Rubric></div>
           <h2 className="mt-6 font-display text-[clamp(46px,6.4vw,104px)] leading-[0.95] text-kajal">Each piece has<br /><span className="italic text-sindoor">a shape.</span></h2>
           <p className="mt-6 max-w-[42ch] text-[19px] leading-[1.6] text-sepia">The line is the melody: time runs left to right, pitch rises and falls. Press any card to hear it and watch the line light up as it plays.</p>
         </Reveal>

@@ -3,7 +3,9 @@
 import { Footer } from "@/components/Footer";
 import { Ensemble } from "@/components/home/Ensemble";
 import { Findings } from "@/components/home/Findings";
+import { Garland } from "@/components/home/Garland";
 import { Hero } from "@/components/home/Hero";
+import { Newest } from "@/components/home/Newest";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { ListenRail } from "@/components/home/ListenRail";
 import { RagaPanels } from "@/components/home/RagaPanels";
@@ -21,9 +23,11 @@ export default function Home() {
       <Hero data={data} />
       <Statement data={data} />
       <TheVoice data={data} />
+      <Newest data={data} />
       <Ensemble />
       <ListenRail data={data} />
       <RagaPanels data={data} />
+      <Garland />
       <HowItWorks data={data} />
       <Findings data={data} />
       <Results data={data} />

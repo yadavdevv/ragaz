@@ -1,0 +1,14 @@
+// Ragamala folios from The Metropolitan Museum of Art (public domain, CC0).
+
+export type Folio = { id: number; title: string; date: string; place: string; credit: string; url: string; note: string; src: string };
+
+export const GARLAND: Folio[] = [
+  {"id": 37857, "title": "Bhairavi Ragini", "date": "ca. 1640–50", "place": "Himachal Pradesh, Mandi", "credit": "Rogers Fund, 1958", "url": "https://www.metmuseum.org/art/collection/search/37857", "note": "Bhairavi, a dawn raga: a devotee worships at a white shrine beside a lotus pond.", "src": "/art/garland/37857.jpg"},
+  {"id": 37882, "title": "Vasant Ragini", "date": "ca. 1630–40", "place": "Madhya Pradesh, Malwa", "credit": "Rogers Fund, 1918", "url": "https://www.metmuseum.org/art/collection/search/37882", "note": "Vasant, the raga of spring: dancers and musicians celebrate among flowering trees.", "src": "/art/garland/37882.jpg"},
+  {"id": 37905, "title": "Dipak Raga", "date": "1630–40", "place": "Madhya Pradesh, Ragugar?", "credit": "Gift of John and Evelyn Kossak, The Kronos Collections, 1982", "url": "https://www.metmuseum.org/art/collection/search/37905", "note": "Dipak, the raga of lamps and fire: a prince and his beloved in a pavilion.", "src": "/art/garland/37905.jpg"},
+  {"id": 37894, "title": "Lalit Ragini", "date": "ca. 1680–90", "place": "Madhya Pradesh, Malwa", "credit": "Gift of Jeffrey Paley, 1975", "url": "https://www.metmuseum.org/art/collection/search/37894", "note": "Lalit, a raga of daybreak, painted in its traditional scene of a lover parting at dawn.", "src": "/art/garland/37894.jpg"},
+  {"id": 37883, "title": "Setmalar Ragini", "date": "ca. 1630–40", "place": "Madhya Pradesh, Malwa", "credit": "Rogers Fund, 1918", "url": "https://www.metmuseum.org/art/collection/search/37883", "note": "Setmalar, a monsoon raga: a peacock and clouds over a palace.", "src": "/art/garland/37883.jpg"},
+  {"id": 37871, "title": "Shri Raga", "date": "mid-17th century", "place": "Rajasthan, Bundi", "credit": "Gift of Phillips, Gold and Company, 1981", "url": "https://www.metmuseum.org/art/collection/search/37871", "note": "Shri Raga: a king listens to music in his palace at dusk.", "src": "/art/garland/37871.jpg"},
+  {"id": 37863, "title": "Kedar Ragini", "date": "ca. 1690–95", "place": "Bikaner, Rajasthan", "credit": "Gift of Mr. and Mrs. Peter Findlay, 1978", "url": "https://www.metmuseum.org/art/collection/search/37863", "note": "Kedar: an ascetic sits under a tree at night, listening.", "src": "/art/garland/37863.jpg"},
+  {"id": 37870, "title": "Nata Ragina", "date": "1714", "place": "Rajasthan, Bikaner", "credit": "Gift of John and Evelyn Kossak, The Kronos Collections, 1980", "url": "https://www.metmuseum.org/art/collection/search/37870", "note": "Nata: a raga of battle, painted as warriors on horseback.", "src": "/art/garland/37870.jpg"},
+];

@@ -31,6 +31,19 @@ body { color: #131A2B; -webkit-font-smoothing: antialiased; }
   radial-gradient(1px 1px at 22% 8%, rgba(241,230,207,.5), transparent 60%),
   linear-gradient(180deg, #0E1322 0%, #131A2B 55%, #1F2840 100%); }
 
+/* age: foxing (small brown spots) and a burnished, darker edge, fixed over the whole page */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: 57; pointer-events: none; mix-blend-mode: multiply;
+  background:
+    radial-gradient(circle at 12% 22%, rgba(140,90,40,.10) 0 2px, transparent 3px),
+    radial-gradient(circle at 78% 64%, rgba(140,90,40,.09) 0 3px, transparent 5px),
+    radial-gradient(circle at 34% 81%, rgba(140,90,40,.08) 0 2px, transparent 4px),
+    radial-gradient(circle at 88% 14%, rgba(140,90,40,.08) 0 4px, transparent 7px),
+    radial-gradient(circle at 56% 38%, rgba(140,90,40,.05) 0 6px, transparent 11px),
+    radial-gradient(circle at 6% 70%, rgba(140,90,40,.07) 0 3px, transparent 6px),
+    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 58%, rgba(120,72,28,.16) 100%);
+}
+
 /* faint grain over everything */
 body::after {
   content: ""; position: fixed; inset: -50%; z-index: 90; pointer-events: none; opacity: .05;

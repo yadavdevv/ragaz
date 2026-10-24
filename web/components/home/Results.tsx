@@ -20,7 +20,7 @@ export function Results({ data }: { data: Data }) {
     <section id="results" className="relative py-28">
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
         <Reveal>
-          <div className="flex items-center gap-4"><Folio n={8} /><Rubric>Results</Rubric></div>
+          <div className="flex items-center gap-4"><Folio n={10} /><Rubric>Results</Rubric></div>
           <h2 className="mt-6 font-display text-[clamp(46px,6.4vw,104px)] leading-[0.95] text-kajal">How good is it?</h2>
         </Reveal>
         <Hashiya className="mt-14">

@@ -126,9 +126,23 @@ export function Folio({ n, className = "" }: { n: number; className?: string }) 
 /** A rubricated heading: the small vermilion title that opens a section. */
 export function Rubric({ children, className = "", tone = "paper" }: { children: ReactNode; className?: string; tone?: "paper" | "night" | "ink" }) {
   return (
-    <div className={`flex items-center gap-3 text-[13px] uppercase tracking-[0.22em] ${tone === "night" ? "text-gulal" : tone === "ink" ? "text-kajal" : "text-sindoor"} ${className}`}>
-      <Rosette size={12} />
+    <div className={`flex items-center gap-2.5 text-[13px] uppercase tracking-[0.22em] ${tone === "night" ? "text-gulal" : tone === "ink" ? "text-kajal" : "text-sindoor"} ${className}`}>
+      <span className="font-display text-[16px] normal-case tracking-normal">॥</span>
       <span>{children}</span>
+      <span className="font-display text-[16px] normal-case tracking-normal">॥</span>
+    </div>
+  );
+}
+
+/** The painted border of a pothi folio, around the whole page on large screens:
+ *  a vermilion band between ink and gold rules, with rosettes at the corners. */
+export function PageFrame() {
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-[58] hidden lg:block">
+      <div className="absolute inset-[10px] border-[5px] border-sindoor/80" />
+      <div className="absolute inset-[7px] border border-kajal/50" />
+      <div className="absolute inset-[17px] border border-sona/80" />
+      {["left-[3px] top-[3px]", "right-[3px] top-[3px]", "bottom-[3px] left-[3px]", "bottom-[3px] right-[3px]"].map((p) => <Rosette key={p} size={22} className={`absolute ${p}`} />)}
     </div>
   );
 }

@@ -11,7 +11,7 @@ import { type Track, toggle, useSite } from "@/lib/site";
 
 type Row = { track: Track; pts: { x: number; v: number }[]; end: number };
 
-export function Ridgeline({ tracks, onHover }: { tracks: Track[]; onHover?: (t: Track | null) => void }) {
+export function Ridgeline({ tracks, onHover, tilt = true, band = [0.16, 0.74] }: { tracks: Track[]; onHover?: (t: Track | null) => void; tilt?: boolean; band?: [number, number] }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
   const tracksRef = useRef(tracks);
@@ -49,7 +49,7 @@ export function Ridgeline({ tracks, onHover }: { tracks: Track[]; onHover?: (t: 
     window.addEventListener("resize", resize);
 
     const geom = () => {
-      const top = H * 0.16, bottom = H * 0.74;
+      const top = H * band[0], bottom = H * band[1];
       const gap = (bottom - top) / Math.max(1, rows.length - 1);
       const left = W * 0.06, right = W * 0.94;
       return { top, gap, left, right, amp: gap * 3.2 };
@@ -182,7 +182,7 @@ export function Ridgeline({ tracks, onHover }: { tracks: Track[]; onHover?: (t: 
       });
 
       // Scroll: the field tilts back and dims.
-      if (wrap.current) {
+      if (wrap.current && tilt) {
         const p = Math.min(1, window.scrollY / (window.innerHeight * 0.9));
         wrap.current.style.transform = `perspective(1200px) rotateX(${p * 30}deg) translateY(${-p * 40}px)`;
       }
@@ -196,7 +196,7 @@ export function Ridgeline({ tracks, onHover }: { tracks: Track[]; onHover?: (t: 
       c.removeEventListener("pointerleave", onLeave);
       c.removeEventListener("click", onClick);
     };
-  }, [onHover]);
+  }, [onHover, tilt, band[0], band[1]]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div ref={wrap} className="absolute inset-0 origin-[50%_80%] will-change-transform">

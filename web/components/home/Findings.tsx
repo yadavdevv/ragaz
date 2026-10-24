@@ -71,7 +71,7 @@ export function Findings({ data }: { data: Data }) {
       <FloralBand />
       <div className="mx-auto max-w-[1400px] px-6 py-28 sm:px-10">
         <Reveal>
-          <div className="flex items-center gap-4"><Folio n={7} /><Rubric>What we found</Rubric></div>
+          <div className="flex items-center gap-4"><Folio n={9} /><Rubric>What we found</Rubric></div>
           <h2 className="mt-6 max-w-[16ch] font-display text-[clamp(46px,6.4vw,104px)] leading-[0.95] text-kajal">Three things a score <span className="italic text-sindoor">can't</span> do.</h2>
         </Reveal>
         <div className="mt-16 grid gap-6 lg:grid-cols-3">
