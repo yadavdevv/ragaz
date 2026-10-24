@@ -1,5 +1,21 @@
 # ragaz
 
+[![license](https://img.shields.io/github/license/yadavdevv/ragaz?label=license)](LICENSE)
+[![demo](https://img.shields.io/badge/demo-ragaz--black.vercel.app-B23A22?logo=vercel&logoColor=white)](https://ragaz-black.vercel.app/)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-4c1)](https://github.com/yadavdevv/ragaz/pulls)
+[![last commit](https://img.shields.io/github/last-commit/yadavdevv/ragaz?label=last%20commit)](https://github.com/yadavdevv/ragaz/commits/main)
+[![stars](https://img.shields.io/github/stars/yadavdevv/ragaz?style=flat&label=stars)](https://github.com/yadavdevv/ragaz/stargazers)
+
+![Qwen3](https://img.shields.io/badge/Qwen3-0.6B-615CED)
+![MLX](https://img.shields.io/badge/MLX-Apple%20silicon-000000?logo=apple&logoColor=white)
+![GRPO](https://img.shields.io/badge/GRPO-LoRA-B23A22)
+![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
+![PyTorch](https://img.shields.io/badge/DDSP-PyTorch-EE4C2C?logo=pytorch&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind-06B6D4?logo=tailwindcss&logoColor=white)
+![Web Audio](https://img.shields.io/badge/Web%20Audio-synth-A8853C)
+
 **A small language model that composes Hindustani ragas, trained on a MacBook with reinforcement learning where the raga's grammar is the reward.**
 
 **Live site: [ragaz-black.vercel.app](https://ragaz-black.vercel.app/)**: listen to its pieces, play the instruments, compose and get scored by the same reward that trained it.
