@@ -12,7 +12,7 @@ export function Footer() {
         </div>
         <div className="mt-12 grid gap-10 border-t border-paper/15 pt-10 font-sans text-[14.5px] leading-[1.65] text-paper/65 sm:grid-cols-3">
           <div className="flex flex-col gap-2 text-[15px]">
-            {[["/listen", "Listen"], ["/ragas/bhupali", "Ragas"], ["/compose", "Compose"], ["/docs", "Docs"]].map(([h, l]) => <Link key={h} href={h} className="text-paper hover:text-gulal">{l}</Link>)}
+            {[["/listen", "Listen"], ["/ragas/bhupali", "Ragas"], ["/compose", "Compose"], ["/instruments", "Instruments"], ["/docs", "Docs"]].map(([h, l]) => <Link key={h} href={h} className="text-paper hover:text-gulal">{l}</Link>)}
           </div>
           <p>Qwen3-0.6B with LoRA, trained with reinforcement learning (GRPO) and supervised fine-tuning on a MacBook. Every piece here was written by it and is sung by your browser from its notation.</p>
           <p>Reference recordings: CompMusic Indian Art Music Raga Recognition Dataset (features), Gulati et al., CC BY 4.0. Ragamala paintings: The Metropolitan Museum of Art (CC0), Rijksmuseum (public domain), Victoria and Albert Museum (non-commercial). Raga rules from standard Bhatkhande descriptions.</p>

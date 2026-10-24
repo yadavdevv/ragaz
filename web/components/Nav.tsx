@@ -10,6 +10,7 @@ const LEFT = [
   { href: "/listen", label: "Listen" },
   { href: "/ragas/bhupali", label: "Ragas", match: "/ragas" },
   { href: "/compose", label: "Compose" },
+  { href: "/instruments", label: "Instruments" },
 ];
 const RIGHT = [
   { href: "/#how", label: "How it works" },

@@ -7,6 +7,8 @@
 import { useEffect, useRef, useState } from "react";
 import { getEngine } from "@/lib/audio";
 import { ragaOf, tick } from "@/lib/site";
+import { useSweep } from "@/lib/sweep";
+import { swaraHz } from "@/lib/music";
 
 const INK = "#131A2B", INK2 = "#1F2840", PAPER = "#F1E6CF", GOLD = "#A8853C", RED = "#B23A22", ROSE = "#D9705A";
 
@@ -91,7 +93,7 @@ export function Tanpura({ className = "", raga = "bhupali" }: { className?: stri
         {Array.from({ length: 10 }, (_, i) => {
           const a = (i / 10) * Math.PI * 2;
           return (
-            <g key={i} transform={`translate(${150 + 84 * Math.cos(a)} ${770 + 106 * Math.sin(a)})`}>
+            <g key={i} transform={`translate(${(150 + 84 * Math.cos(a)).toFixed(2)} ${(770 + 106 * Math.sin(a)).toFixed(2)})`}>
               {Array.from({ length: 5 }, (_, k) => <ellipse key={k} cx="0" cy="-4" rx="2" ry="4" fill={k % 2 ? ROSE : PAPER} transform={`rotate(${k * 72})`} />)}
             </g>
           );
@@ -149,13 +151,59 @@ export function Tabla({ className = "" }: { className?: string }) {
       if (i < 0) setPlaying(false);
     });
   };
+  // Hover (or drag a finger) across the drums: entering a drum strikes it, and moving across its
+  // head keeps playing, up to ~7 strokes a second. The rim of the dayan rings "na", its black
+  // centre (syahi) "tin"; the bayan booms "ge".
+  const svgRef = useRef<SVGSVGElement>(null);
+  const last = useRef({ t: 0, x: 0, y: 0 });
+  const zoneStrike = async (side: "dayan" | "bayan", e: PointerEvent) => {
+    const now = performance.now();
+    const svg = svgRef.current!;
+    const r = svg.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 600, y = ((e.clientY - r.top) / r.height) * 460;
+    const moved = Math.hypot(x - last.current.x, y - last.current.y);
+    if (now - last.current.t < 140 && moved < 40) return;
+    last.current = { t: now, x, y };
+    const eng = await ready();
+    let bol = "ge", label = "गे";
+    if (side === "dayan") {
+      const centre = Math.hypot((x - 430) / 80, (y - 128) / 24) < 0.42 || y > 150;
+      bol = centre ? "tin" : "na";
+      label = centre ? "तिं" : "ना";
+    }
+    eng.tabla(bol, undefined, 0.85);
+    setHit({ side, bol: label, id: now });
+  };
+  const hover = useRef<string | null>(null);
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const move = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" && e.buttons === 0) return;
+      const t = (document.elementFromPoint(e.clientX, e.clientY) as Element | null)?.closest?.("[data-drum]") as SVGElement | null;
+      const side = (t && svg.contains(t) ? t.getAttribute("data-drum") : null) as "dayan" | "bayan" | null;
+      if (side && (side !== hover.current || e.type === "pointermove")) zoneStrike(side, e);
+      hover.current = side;
+    };
+    const leave = () => (hover.current = null);
+    svg.addEventListener("pointermove", move);
+    svg.addEventListener("pointerdown", move);
+    svg.addEventListener("pointerleave", leave);
+    svg.style.touchAction = "none";
+    return () => {
+      svg.removeEventListener("pointermove", move);
+      svg.removeEventListener("pointerdown", move);
+      svg.removeEventListener("pointerleave", leave);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const glowD = hit && (hit.side === "dayan" || hit.side === "both");
   const glowB = hit && (hit.side === "bayan" || hit.side === "both");
 
   return (
     <div className={`select-none ${className}`}>
       <div className="relative">
-        <svg viewBox="0 0 600 460" className="w-full overflow-visible">
+        <svg ref={svgRef} viewBox="0 0 600 460" className="w-full overflow-visible">
           <defs>
             <radialGradient id="tb-bowl" cx="35%" cy="30%" r="80%"><stop offset="0" stopColor={INK2} /><stop offset="1" stopColor={INK} /></radialGradient>
           </defs>
@@ -163,7 +211,7 @@ export function Tabla({ className = "" }: { className?: string }) {
           <ellipse cx="175" cy="412" rx="122" ry="26" fill="none" stroke={RED} strokeWidth="9" />
           <ellipse cx="430" cy="420" rx="84" ry="20" fill="none" stroke={RED} strokeWidth="9" />
           {/* bayan: the metal bowl, left */}
-          <g data-cursor="Strike" className="cursor-pointer" onClick={(e) => strike("bayan", e)}>
+          <g data-cursor="Play" data-drum="bayan" className="cursor-pointer" onClick={(e) => e.shiftKey && strike("bayan", e)}>
             <path d="M 40 196 C 40 330 100 405 175 405 C 250 405 310 330 310 196 Z" fill="url(#tb-bowl)" stroke={GOLD} strokeWidth="1.5" />
             {Array.from({ length: 7 }, (_, i) => <path key={i} d={`M ${60 + i * 38} 205 C ${58 + i * 38} 300 ${120 + i * 18} 380 ${175 + (i - 3) * 14} 402`} fill="none" stroke={PAPER} strokeWidth=".8" opacity=".35" />)}
             <ellipse cx="175" cy="196" rx="135" ry="40" fill={PAPER} stroke={GOLD} strokeWidth="2" />
@@ -172,7 +220,7 @@ export function Tabla({ className = "" }: { className?: string }) {
             <ellipse cx="175" cy="196" rx="135" ry="40" fill={ROSE} opacity={glowB ? 0.35 : 0} style={{ transition: "opacity .35s" }} />
           </g>
           {/* dayan: the wooden drum, right */}
-          <g data-cursor="Strike" className="cursor-pointer" onClick={(e) => strike("dayan", e)}>
+          <g data-cursor="Play" data-drum="dayan" className="cursor-pointer" onClick={(e) => e.shiftKey && strike("dayan", e)}>
             <path d="M 352 128 L 508 128 L 498 408 L 362 408 Z" fill={INK2} stroke={GOLD} strokeWidth="1.5" />
             {/* braces (baddhi) and tuning blocks (gatte) */}
             {Array.from({ length: 9 }, (_, i) => {
@@ -204,7 +252,7 @@ export function Tabla({ className = "" }: { className?: string }) {
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-4 font-sans text-[14px] text-sepia">
         <button data-cursor="Play" onClick={theka} className={`rounded-full px-5 py-2.5 font-medium transition ${playing ? "bg-kajal text-paper" : "bg-sindoor text-paper hover:bg-kajal"}`}>{playing ? "Playing teentaal…" : "▶ Play the theka"}</button>
-        <span>Tap a drum · shift-click for both (धा)</span>
+        <span>Move across the drums to play · shift-click for both together (धा)</span>
       </div>
     </div>
   );
@@ -214,29 +262,29 @@ export function Tabla({ className = "" }: { className?: string }) {
 
 type Key = { s: string; o: number; label: string };
 
-/** A harmonium: bellows that breathe while you play, drone stops, and keys for one raga. */
-export function Harmonium({ keys, onKey, raga = "bhupali", big = true, pressed }: { keys: Key[]; onKey?: (k: Key) => void; raga?: string; big?: boolean; pressed?: string | null }) {
-  const [down, setDown] = useState<string | null>(null);
-  const [air, setAir] = useState(0);
-  useEffect(() => {
-    if (!down && !pressed) return;
-    setAir(1);
-    const t = window.setTimeout(() => setAir(0), 450);
-    return () => window.clearTimeout(t);
-  }, [down, pressed]);
-  const hit = async (k: Key) => {
+/** A small harmonium for one raga: keys sound while the pointer is over them (sweep across to
+ *  play a run), the bellows breathe while any reed sounds, and the knobs are drone stops. */
+export function Harmonium({ keys, onKey, raga = "bhupali", big = true }: { keys: Key[]; onKey?: (k: Key) => void; raga?: string; big?: boolean; pressed?: string | null }) {
+  const [held, setHeld] = useState<Set<string>>(new Set());
+  const root = useRef<HTMLDivElement>(null);
+  const byId = (id: string) => keys.find((k) => `${k.s}${k.o}` === id)!;
+  useSweep(root, async (id) => {
     const eng = await ready(raga);
-    if (onKey) onKey(k);
-    else eng.note(k.s, k.o, 0.8);
-    setDown(`${k.s}${k.o}`);
-    window.setTimeout(() => setDown(null), 150);
-  };
-  const isDown = (k: Key) => down === `${k.s}${k.o}` || pressed === `${k.s}${k.o}`;
+    const k = byId(id);
+    if (!k) return;
+    eng.reedOn(`h-${id}`, swaraHz(k.s, k.o, eng.saHz));
+    onKey?.(k);
+    setHeld((h) => new Set(h).add(id));
+  }, (id) => {
+    getEngine().reedOff(`h-${id}`, 0.06);
+    setHeld((h) => { const n = new Set(h); n.delete(id); return n; });
+  });
+  const air = held.size > 0;
   return (
-    <div className="inline-block w-full max-w-full select-none lg:w-auto">
+    <div ref={root} className="inline-block w-full max-w-full select-none lg:w-auto">
       {/* bellows */}
-      <div className="relative mx-3 h-12 overflow-hidden rounded-t-md border-x-[3px] border-t-[3px] border-[#5E1F14] bg-paper2 transition-[height] duration-300 ease-out sm:h-14" style={{ height: air ? undefined : undefined }}>
-        <div className="absolute inset-0 transition-transform duration-300 ease-out" style={{ transform: `scaleY(${1 - air * 0.22})`, transformOrigin: "bottom",
+      <div className="relative mx-3 h-12 overflow-hidden rounded-t-md border-x-[3px] border-t-[3px] border-[#5E1F14] bg-paper2 sm:h-14">
+        <div className="absolute inset-0 transition-transform duration-500 ease-out" style={{ transform: `scaleY(${air ? 0.74 : 1})`, transformOrigin: "bottom",
           backgroundImage: `repeating-linear-gradient(180deg, ${PAPER} 0 6px, #CDB690 6px 7px, #E8D8BA 7px 12px, ${INK} 12px 13px)` }} />
       </div>
       {/* case */}
@@ -248,13 +296,16 @@ export function Harmonium({ keys, onKey, raga = "bhupali", big = true, pressed }
           <div className="flex gap-1">{Array.from({ length: 6 }, (_, i) => <span key={i} className="h-1 w-6 rounded-full bg-[#A8853C]/70" />)}</div>
         </div>
         <div className="flex gap-[3px]">
-          {keys.map((k) => (
-            <button key={`${k.s}${k.o}`} data-cursor="Sing" onPointerDown={() => hit(k)}
-              className={`flex shrink-0 flex-col items-center justify-end rounded-b-md border border-[#cdbb98] pb-3 font-display shadow-[0_6px_0_#cdbb98] transition-all duration-100 ${big ? "h-36 min-w-0 flex-1 text-[18px] sm:h-48 sm:text-[22px] lg:h-52 lg:w-24 lg:flex-none lg:text-[24px]" : "h-32 w-14 text-[20px]"} ${k.o === 0 ? "bg-[#FBF5E6] text-kajal" : "bg-[#F3E9D2] text-sepia"} ${isDown(k) ? "translate-y-1.5 bg-[#efe2c4] shadow-[0_2px_0_#cdbb98]" : "hover:bg-[#fffaf0]"}`}>
-              {k.label}
-              <span className="mt-1 font-sans text-[11px] text-sepia">{k.o > 0 ? "upper" : k.o < 0 ? "lower" : " "}</span>
-            </button>
-          ))}
+          {keys.map((k) => {
+            const id = `${k.s}${k.o}`, on = held.has(id);
+            return (
+              <div key={id} data-sweep={id} data-cursor="Play"
+                className={`flex shrink-0 cursor-pointer flex-col items-center justify-end rounded-b-md border border-[#cdbb98] pb-3 font-display transition-all duration-100 ${big ? "h-36 min-w-0 flex-1 text-[18px] sm:h-48 sm:text-[22px] lg:h-52 lg:w-24 lg:flex-none lg:text-[24px]" : "h-32 w-14 text-[20px]"} ${k.o === 0 ? "bg-[#FBF5E6] text-kajal" : "bg-[#F3E9D2] text-sepia"} ${on ? "translate-y-1.5 bg-[#efe2c4] shadow-[0_2px_0_#cdbb98]" : "shadow-[0_6px_0_#cdbb98]"}`}>
+                {k.label}
+                <span className="mt-1 font-sans text-[11px] text-sepia">{k.o > 0 ? "upper" : k.o < 0 ? "lower" : "\u00a0"}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

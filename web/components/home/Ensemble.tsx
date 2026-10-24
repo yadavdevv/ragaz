@@ -2,6 +2,7 @@
 
 import { Tabla, Tanpura } from "@/components/Instruments";
 import { Folio, Rubric } from "@/components/Ornament";
+import { Magnetic } from "@/components/Magnetic";
 import { Reveal } from "@/components/Text";
 
 /** The instruments around the melody: the drone it is measured from, and the cycle it moves in. */
@@ -10,7 +11,7 @@ export function Ensemble() {
     <section className="relative overflow-hidden py-28">
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
         <Reveal>
-          <div className="flex items-center gap-4"><Folio n={3} /><Rubric>The ensemble</Rubric></div>
+          <div className="flex items-center gap-4"><Folio n={4} /><Rubric>The ensemble</Rubric></div>
           <h2 className="mt-6 max-w-[18ch] font-display text-[clamp(46px,6.4vw,104px)] leading-[0.95] text-kajal">A melody never <span className="italic text-sindoor">sings alone.</span></h2>
         </Reveal>
         <div className="mt-10 grid items-center gap-16 lg:grid-cols-[0.8fr_1.2fr]">
@@ -35,6 +36,7 @@ export function Ensemble() {
             </div>
           </div>
         </div>
+        <div className="mt-14 flex justify-center"><Magnetic href="/instruments" variant="solid" size="lg" cursor="Open">Play the full harmonium and more →</Magnetic></div>
       </div>
     </section>
   );

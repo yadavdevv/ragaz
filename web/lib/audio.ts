@@ -560,6 +560,87 @@ export class Engine {
     return 16 * beat;
   }
 
+  // ------------------------------------------------------------ harmonium reeds
+
+  private reeds = new Map<string, { stop: (at: number) => void }>();
+  private reedWave: PeriodicWave | null = null;
+  private airGain: GainNode | null = null;
+
+  /** The bellows: every reed sounds through this, so "air" swells and settles like pumping. */
+  private air() {
+    if (!this.airGain) {
+      this.airGain = this.ctx.createGain();
+      this.airGain.gain.value = 0.75;
+      const tone = this.ctx.createBiquadFilter();
+      tone.type = "lowpass";
+      tone.frequency.value = 3600;
+      tone.Q.value = 0.4;
+      this.airGain.connect(tone).connect(this.bus);
+      // a reed's spectrum: strong odd and even harmonics, a nasal peak around the 3rd–5th
+      const n = 28;
+      const im = new Float32Array(n);
+      for (let k = 1; k < n; k++) im[k] = (1 / k ** 0.75) * (k >= 3 && k <= 5 ? 1.5 : 1) * (k % 2 ? 1 : 0.8);
+      this.reedWave = this.ctx.createPeriodicWave(new Float32Array(n), im);
+    }
+    return this.airGain;
+  }
+
+  /** Press a harmonium key: two reeds a few cents apart (the beating that makes it shimmer). */
+  reedOn(id: string, hz: number, level = 1) {
+    if (this.reeds.has(id)) return;
+    const ctx = this.ctx, out = this.air();
+    const at = this.now + 0.004;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(0.11 * level, at + 0.035); // reeds speak fast
+    g.gain.setTargetAtTime(0.085 * level, at + 0.05, 0.25); // and settle as the air evens out
+    g.connect(out);
+    const oscs = [0, 3.5].map((cents) => {
+      const o = ctx.createOscillator();
+      o.setPeriodicWave(this.reedWave!);
+      o.frequency.value = hz * 2 ** (cents / 1200);
+      o.connect(g);
+      o.start(at);
+      return o;
+    });
+    // breath of the bellows through the reed chamber
+    const n = ctx.createBufferSource();
+    n.buffer = this.noiseBuf;
+    n.loop = true;
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = Math.min(6000, hz * 6);
+    bp.Q.value = 2;
+    const ng = ctx.createGain();
+    ng.gain.value = 0.012 * level;
+    n.connect(bp).connect(ng).connect(g);
+    n.start(at, Math.random());
+    this.reeds.set(id, {
+      stop: (t) => {
+        g.gain.cancelScheduledValues(t);
+        g.gain.setTargetAtTime(0, t, 0.045);
+        for (const o of oscs) o.stop(t + 0.4);
+        n.stop(t + 0.4);
+      },
+    });
+    this.log({ at, semis: 12 * Math.log2(hz / this.saHz), hz, kind: "note" });
+  }
+
+  reedOff(id: string, after = 0) {
+    const r = this.reeds.get(id);
+    if (!r) return;
+    this.reeds.delete(id);
+    r.stop(this.now + after);
+  }
+
+  reedsOff() {
+    for (const id of [...this.reeds.keys()]) this.reedOff(id);
+  }
+
+  get reedCount() {
+    return this.reeds.size;
+  }
+
   /** A tiny pluck for UI feedback: a short, quiet harmonic of Sa. */
   tick(kind: "tap" | "soft" = "tap") {
     if (this.ctx.state !== "running") return;
