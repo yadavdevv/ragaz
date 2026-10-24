@@ -15,8 +15,17 @@ const serif = Newsreader({ subsets: ["latin"], variable: "--font-serif", style: 
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://ragaz-black.vercel.app"),
   title: "ragaz",
   description: "A small language model that composes Hindustani ragas.",
+  openGraph: {
+    title: "ragaz",
+    description: "A small language model that composes Hindustani ragas: listen, play the instruments, compose and get scored.",
+    url: "/",
+    siteName: "ragaz",
+    type: "website",
+  },
+  twitter: { card: "summary", title: "ragaz", description: "A small language model that composes Hindustani ragas." },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
