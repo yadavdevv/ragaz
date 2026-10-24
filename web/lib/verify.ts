@@ -116,12 +116,22 @@ function calibrated(value: number, real: number[], higherIsBetter: boolean) {
   return Math.min(1, 2 * share);
 }
 
+/** Float sum as Python's built-in sum() does it since 3.12 (Neumaier compensation), so totals
+ *  that land exactly on a calibration value break the tie the same way as the Python verifier. */
+function pySum(xs: number[]) {
+  let s = 0, c = 0;
+  for (const x of xs) {
+    const t = s + x;
+    c += Math.abs(s) >= Math.abs(x) ? s - t + x : x - t + s;
+    s = t;
+  }
+  return s + c;
+}
+
 function phraseRaw(notes: Note[], phrases: Record<string, number>) {
   const found = new Set<string>();
   for (let i = 0; i <= notes.length - NGRAM; i++) found.add(notes.slice(i, i + NGRAM).map((n) => n.s).join(" "));
-  let s = 0;
-  for (const [g, w] of Object.entries(phrases)) if (found.has(g)) s += w;
-  return s;
+  return pySum(Object.entries(phrases).filter(([g]) => found.has(g)).map(([, w]) => w));
 }
 
 export function styleScores(notes: Note[], prof: Profile) {

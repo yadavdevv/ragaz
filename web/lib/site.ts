@@ -11,7 +11,11 @@ import type { Profiles } from "./verify";
 export type Exhibit = { key: string; title: string; notes: Note[]; raga: string; reward_then: number | null; reward_now: number; notation: string; source: string };
 export type Journey = Record<string, Record<string, [number, number][]> & { sa?: Record<string, [number, number][]> }>;
 export type Voice = { raga: string; recording: string; title: string; start: number; hop: number; cents: (number | null)[]; source: string };
-export type Data = { ragas: Raga[]; pieces: Piece[]; masters: Masters; profiles: Profiles; exhibits: Exhibit[]; journey: Journey; voices: Voice[] };
+export type Recording = { raga: string; notation: string; files: Record<string, string>; tempo: number; bars: number; run: string; step: number | null; reward: number | null; notes: Note[] };
+export type LatestPiece = Piece & { bars: number };
+export type Latest = { run: string; step: number; bars: number; tempo: number; ragas: Raga[]; pieces: LatestPiece[]; recordings: Recording[]; voices: Record<string, string> };
+/** `ragas` are the three with real-singer data; `allRagas` adds Deshkar (newest model only). */
+export type Data = { ragas: Raga[]; allRagas: Raga[]; pieces: Piece[]; masters: Masters; profiles: Profiles; exhibits: Exhibit[]; journey: Journey; voices: Voice[]; latest: Latest };
 
 /** Anything the player can play: a piece, a phrase, or something you wrote. */
 export type Track = { id: string; title: string; sub: string; raga: string; notes: Note[]; notation?: string; reward?: number };
@@ -36,22 +40,23 @@ export function useData() {
   const data = useSite((s) => s.data);
   useEffect(() => {
     if (data || loading) return;
-    loading = Promise.all(["ragas", "pieces", "masters", "profiles", "exhibits", "journey", "voices"].map((n) => fetch(`/data/${n}.json`).then((r) => r.json()))).then(
+    loading = Promise.all(["ragas", "pieces", "masters", "profiles", "exhibits", "journey", "voices", "latest"].map((n) => fetch(`/data/${n}.json`).then((r) => r.json()))).then(
       (all) => {
-        const [ragas, pieces, masters, profiles, exhibits, journey, voices] = all as [RagaData, Piece[], Masters, Profiles, Exhibit[], Journey, Voice[]];
-        useSite.getState().set({ data: { ragas: ragas.ragas, pieces, masters, profiles, exhibits, journey, voices } });
+        const [ragas, pieces, masters, profiles, exhibits, journey, voices, latest] = all as [RagaData, Piece[], Masters, Profiles, Exhibit[], Journey, Voice[], Latest];
+        useSite.getState().set({ data: { ragas: ragas.ragas, allRagas: latest.ragas, pieces, masters, profiles, exhibits, journey, voices, latest } });
       },
     );
   }, [data]);
   return data;
 }
 
-export const ragaOf = (key: string) => useSite.getState().data?.ragas.find((r) => r.key === key) ?? null;
+export const ragaOf = (key: string) => useSite.getState().data?.allRagas.find((r) => r.key === key) ?? null;
 
 export function pieceTrack(p: Piece, label?: string): Track {
   const r = ragaOf(p.raga);
   const n = Number(p.id.split("-").pop()) + 1;
-  return { id: p.id, title: `${r?.name ?? p.raga} no. ${n}`, sub: label ?? `${r?.time.split(" (")[0] ?? ""} · composed from the word “${r?.name}”`, raga: p.raga, notes: p.notes, notation: p.notation, reward: p.reward };
+  const sub = p.model === "v5e" ? `newest model · 16 bars · ${r?.time.split(" (")[0] ?? ""}` : `${r?.time.split(" (")[0] ?? ""} · composed from the word “${r?.name}”`;
+  return { id: p.id, title: `${r?.name ?? p.raga} no. ${n}`, sub: label ?? sub, raga: p.raga, notes: p.notes, notation: p.notation, reward: p.reward };
 }
 
 /** Play a track through the shared engine (with a soft tanpura under it). */

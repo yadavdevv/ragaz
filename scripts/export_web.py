@@ -28,7 +28,7 @@ MODELS = [
     ("sft", "track-b-v1-20261008-0122", 0),  # step 0 of v1 = the Track B SFT model, before any v1 GRPO
 ]
 
-DEVANAGARI = {"bhupali": "भूपाली", "yaman": "यमन", "malkauns": "मालकौंस"}
+DEVANAGARI = {"bhupali": "भूपाली", "yaman": "यमन", "malkauns": "मालकौंस", "deshkar": "देशकार"}
 # Hours (local, 24h) the raga is traditionally sung, for the raga clock.
 HOURS = {"bhupali": [19, 22], "yaman": [18, 21], "malkauns": [0, 3]}
 
@@ -46,7 +46,7 @@ def raga_entry(r) -> dict:
         "nyas": sorted(r.nyas, key=SWARAS.index),
         "pakad": r.pakad,
         "time": r.time,
-        "hours": HOURS.get(r.key),
+        "hours": HOURS.get(r.key, [6, 9]),
         "rasa": r.rasa,
         "tanpura": r.tanpura,
     }
@@ -272,6 +272,66 @@ def voices(ragas: dict, seconds: float = 10.0, hop: float = 0.02) -> list[dict]:
     return out
 
 
+LATEST_RUN = "v5e-long-grpo-20261024-1940"
+LATEST_STEP = 30  # best checkpoint by real-twin score (experiments.md)
+
+
+def latest(all_ragas: dict) -> dict:
+    """The newest model (v5e): 16-bar pieces for all four ragas, plus its rendered recordings.
+
+    Scores are the v5 reward the run was trained and evaluated with (the browser verifier
+    implements v2, so these pieces are shown with their own run's scores, not re-scored).
+    Recordings: out/v5e-<raga>-{expressive,violin}.wav, converted to MP3 in web/public/audio.
+    """
+    import subprocess
+
+    rows = jsonl(RUNS / LATEST_RUN / "eval_samples.jsonl")
+    best = jsonl(RUNS / LATEST_RUN / "eval_best_samples.jsonl")
+    pieces = []
+    for key, raga in all_ragas.items():
+        group = [r for r in rows if r["step"] == LATEST_STEP and r["variant"] == "bare" and r["raga"] == key]
+        for i, r in enumerate(group):
+            comp = parse(r["notation"])
+            pieces.append({
+                "id": f"v5e-{key}-{i:02d}", "model": "v5e", "run": LATEST_RUN, "step": r["step"], "raga": key,
+                "notation": r["notation"], "beats": comp.beats, "bars": len(comp.bars), "reward": round(r["reward"], 4),
+                "scores": {k: round(v, 4) for k, v in r["scores"].items()}, "violations": r["violations"],
+                "notes": [{"s": n.swara, "o": n.octave, "t": round(n.start, 4), "d": round(n.duration, 4), "bar": n.bar, "ok": n.swara in raga.notes} for n in comp.notes],
+            })
+    audio = Path("web/public/audio")
+    audio.mkdir(parents=True, exist_ok=True)
+    recordings = []
+    for key, raga in all_ragas.items():
+        txt = Path(f"out/v5e-{key}.txt")
+        if not txt.exists():
+            continue
+        notation = txt.read_text().strip()
+        flat = notation.replace("\n", " ")
+        src = next((r for r in rows + best if r["notation"].strip().replace("\n", " ") == flat), None)
+        files = {}
+        for voice in ["violin", "expressive"]:
+            wav = Path(f"out/v5e-{key}-{voice}.wav")
+            if wav.exists():
+                mp3 = audio / f"v5e-{key}-{voice}.mp3"  # MP3: plays in every browser
+                subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav), "-codec:a", "libmp3lame", "-b:a", "128k", str(mp3)], check=True)
+                files[voice] = f"/audio/{mp3.name}"
+        comp = parse(notation)
+        recordings.append({
+            "raga": key, "notation": notation, "files": files, "tempo": 90, "bars": len(comp.bars),
+            "run": LATEST_RUN, "step": src["step"] if src else None, "reward": round(src["reward"], 4) if src else None,
+            "notes": [{"s": n.swara, "o": n.octave, "t": round(n.start, 4), "d": round(n.duration, 4), "bar": n.bar, "ok": n.swara in raga.notes} for n in comp.notes],
+        })
+    return {
+        "run": LATEST_RUN, "step": LATEST_STEP, "bars": 16, "tempo": 90,
+        "ragas": [raga_entry(r) for r in all_ragas.values()],
+        "pieces": pieces, "recordings": recordings,
+        "voices": {
+            "violin": "a DDSP violin trained on 43 minutes of solo violin stems from Saraga Carnatic concerts (CC BY-NC-SA 4.0), playing the notes with glides and wavers learned from recordings",
+            "expressive": "the same notes with learned glides and wavers, in a simple synthesised voice",
+        },
+    }
+
+
 def main() -> None:
     profiles = load_profiles()
     # The site covers the ragas that have real-singer profiles (Deshkar has none yet).
@@ -318,6 +378,7 @@ def main() -> None:
     (OUT / "journey.json").write_text(json.dumps(journey()))
     (OUT / "arena.json").write_text(json.dumps(arena(ragas)))
     (OUT / "voices.json").write_text(json.dumps(voices(ragas)))
+    (OUT / "latest.json").write_text(json.dumps(latest(load_ragas()), ensure_ascii=False))
     (OUT / "ragas.json").write_text(json.dumps({"ragas": [raga_entry(r) for r in ragas.values()], **meta}, ensure_ascii=False, indent=1))
     (OUT / "pieces.json").write_text(json.dumps(pieces, ensure_ascii=False))
     (OUT / "masters.json").write_text(json.dumps(masters, ensure_ascii=False, indent=1))
