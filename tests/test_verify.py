@@ -166,3 +166,15 @@ def test_v4_catches_one_forbidden_note_and_tells_twins_apart():
     assert verify(deshkar_style, "deshkar", style="v4").reward > verify(deshkar_style, "bhupali", style="v4").reward
     bhupali = (EXAMPLES / "bhupali.txt").read_text()
     assert verify(bhupali, "bhupali", style="v4").reward > verify(bhupali, "deshkar", style="v4").reward
+
+
+
+def test_arc_rewards_a_rising_antara_in_long_pieces():
+    from ragaz.notation import parse
+    from ragaz.verify import score_arc
+
+    sthayi = "S R G R | G P G R | S R G P | G R S - |\nG R S .D | S R G P | G R G R | G R S - |"
+    rising = "G P D S' | D S' R' S' | D P G P | D S' - - |\nS' D P G | P D S' D | P G R G | P G R S |"
+    flat = sthayi
+    assert score_arc(parse(sthayi + "\n" + rising), []) == 1.0
+    assert score_arc(parse(sthayi + "\n" + flat), []) < 0.5

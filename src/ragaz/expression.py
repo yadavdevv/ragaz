@@ -7,6 +7,7 @@ Our model writes plain notes; real Hindustani music lives in the movement:
 This builds a small library from the CompMusic pitch tracks (CC BY 4.0):
   glides[raga][interval]   → real transition curves, resampled, with their durations
   waver[raga][swara]       → depth (cents) and rate (Hz) of the waver on long notes
+  micro[raga][swara]       → real detrended within-note pitch curves (100 points/s), replayed as-is
 
 The renderer then *replays real curves*: a nonparametric (example-based) expression
 model. A learned generative model can replace it later; this is the honest baseline.
@@ -41,6 +42,7 @@ def cents_track(times: np.ndarray, hz: np.ndarray, tonic: float) -> np.ndarray:
 def build(ragas: list[str], max_per_interval: int = 40, seed: int = 0) -> dict:
     rng = random.Random(seed)
     rejected = 0
+    micro: dict = defaultdict(lambda: defaultdict(list))
     glides: dict = defaultdict(lambda: defaultdict(list))
     waver: dict = defaultdict(lambda: defaultdict(list))
     for raga in ragas:
@@ -95,11 +97,19 @@ def build(ragas: list[str], max_per_interval: int = 40, seed: int = 0) -> dict:
                 band = (freqs >= 0.5) & (freqs <= 12)
                 rate = float(freqs[band][np.argmax(spectrum[band])])
                 waver[raga][n.swara].append((depth, rate))
+                # The real contour itself (light 15 ms smoothing keeps the small organic
+                # ups and downs, removes tracker jitter), detrended, at 100 points/s.
+                k_fine = max(1, int(0.015 / hop))
+                fine = np.convolve(seg, np.ones(k_fine) / k_fine, mode="valid")
+                fine = fine - np.polyval(np.polyfit(np.arange(len(fine)), fine, 1), np.arange(len(fine)))
+                step = max(1, int(0.01 / hop))
+                micro[raga][n.swara].append(np.round(fine[::step][:300], 1).tolist())
 
     print(f"rejected {rejected} glides as pitch-tracking errors")
-    library = {"glides": {}, "waver": {}}
+    library = {"glides": {}, "waver": {}, "micro": {}}
     for raga in ragas:
         library["glides"][raga] = {k: rng.sample(v, min(len(v), max_per_interval)) for k, v in glides[raga].items() if len(v) >= 3}
+        library["micro"][raga] = {s: rng.sample(v, min(len(v), 25)) for s, v in micro[raga].items() if len(v) >= 5}
         library["waver"][raga] = {
             s: {"depth_cents": round(float(np.median([d for d, _ in v])), 1), "rate_hz": round(float(np.median([r for _, r in v])), 2), "n": len(v)}
             for s, v in waver[raga].items()

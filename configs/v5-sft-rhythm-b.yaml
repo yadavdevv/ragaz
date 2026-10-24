@@ -1,0 +1,33 @@
+# Teach rhythm: SFT on 600 good pieces re-timed with real-music rhythm (scripts/rhythmize.py),
+# because GRPO saw rhythm 0.00 in all 320 v5a rollouts: nothing to reinforce.
+# Both prompt variants, so the hinted mode isn't forgotten (it was in earlier SFTs).
+name: v5-sft-rhythm-b
+model: mlx-community/Qwen3-0.6B-bf16
+tracker: trackio
+init_adapter: runs/grpo/v5-sft-rhythm-20261024-1521/checkpoints/step00050
+ragas: [bhupali, yaman, malkauns, deshkar]
+reward_style: v5
+rhythm_prompt: true
+target_bars: 8
+
+sft_data: data/rhythm_v5.jsonl
+sft_epochs: 1            # resumes the run stopped by the watchdog at step 70 (from its step-50 checkpoint)
+sft_variants: [bare, hinted]
+prompts_per_step: 4
+group_size: 4            # batch 16
+
+lr: 5.0e-5
+warmup_steps: 5
+beta: 0.0
+lora_rank: 16
+lora_layers: 16
+max_tokens: 160
+
+eval_every: 25
+eval_samples: 24
+save_every: 25
+best_metric: eval/bare/real_twin_score
+micro_batch: 2          # lighter: peak ~3 GB (was 4.3 GB)
+gen_batch: 8
+memory_gb: 4
+hard_memory_gb: 8

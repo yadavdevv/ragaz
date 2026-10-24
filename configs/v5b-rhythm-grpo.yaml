@@ -1,0 +1,39 @@
+# v5b: GRPO on the v5 reward (v4 hybrid + real rhythm) from the rhythm-SFT model (rhythm 0.36,
+# beats 99%, twin 92%). v5a showed GRPO alone can't start rhythm (0.00 in all rollouts);
+# SFT on re-timed pieces taught it; GRPO now balances rhythm with raga identity.
+name: v5b-rhythm-grpo
+model: mlx-community/Qwen3-0.6B-bf16
+tracker: trackio
+init_adapter: runs/grpo/v5-sft-rhythm-b-20261024-1651/checkpoints/best
+ragas: [bhupali, yaman, malkauns, deshkar]
+reward_style: v5
+rhythm_prompt: true
+target_bars: 8
+
+steps: 60
+prompts_per_step: 4
+group_size: 8
+temperature: 1.0
+max_tokens: 160
+
+lr: 1.0e-5
+warmup_steps: 5
+beta: 0.04
+lora_rank: 16
+lora_layers: 16
+duplicate_penalty: 0.5
+novelty_ref: data/distilled_v4.jsonl
+novelty_weight: 0.3
+group_profile_weight: 0.4
+
+hint_start: 0.3
+hint_end: 0.3
+
+eval_every: 10
+eval_samples: 24
+save_every: 10
+best_metric: eval/bare/real_twin_score
+micro_batch: 2
+gen_batch: 8
+memory_gb: 4
+hard_memory_gb: 8

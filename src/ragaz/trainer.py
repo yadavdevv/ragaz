@@ -33,11 +33,13 @@ from ragaz.ragas import get_raga
 from ragaz.render import render, write_wav
 from ragaz.tracking import Tracker
 from ragaz.verify import verify
-from ragaz.watchdog import MemoryWatchdog
+from ragaz.watchdog import MemoryWatchdog, ResourceGovernor
 
 PARTS = ["format", "allowed", "beats", "tala", "emphasis", "melody", "pakad", "variety", "length"]
 PARTS_V2 = ["profile", "motion", "phrases"]
 PARTS_V4 = ["rank", "purity"]
+PARTS_V5 = ["rhythm", "register"]
+PARTS_LONG = ["arc"]
 RAGA_NOTES = lambda notation: [(n.swara, n.octave, n.duration) for n in parse(notation).notes]  # noqa: E731
 EVAL_TEMP, EVAL_TOP_P = 0.8, 0.95  # same as the baseline, so numbers are comparable
 
@@ -75,6 +77,7 @@ class GRPOTrainer:
             cfg.max_swap_growth_gb,
             marker=self.run_dir / "KILLED_BY_WATCHDOG.txt",
         ).start()
+        self.governor = ResourceGovernor(cfg.governor_full_gb, cfg.governor_pause_gb)
 
         print(f"loading {cfg.model}")
         self.model, self.tokenizer = load(cfg.model)
@@ -132,8 +135,8 @@ class GRPOTrainer:
             prompts,
             max_tokens=self.cfg.max_tokens,
             sampler=make_sampler(temp=temp, top_p=top_p if top_p < 1 else 0.0),
-            completion_batch_size=self.cfg.gen_batch,
-            prefill_batch_size=min(4, self.cfg.gen_batch),
+            completion_batch_size=max(2, int(self.cfg.gen_batch * self.governor.scale)),
+            prefill_batch_size=max(1, min(4, int(self.cfg.gen_batch * self.governor.scale))),
             return_token_ids=True,
         )
         completions, truncated = [], []
@@ -165,7 +168,7 @@ class GRPOTrainer:
         for i in range(cfg.prompts_per_step):
             raga = self.ragas[(self.step * cfg.prompts_per_step + i) % len(self.ragas)]
             variant = "hinted" if self.rng.random() < p_hint else "bare"
-            specs.append((raga, variant, chat_prompt(self.tokenizer, raga, variant)))
+            specs.append((raga, variant, chat_prompt(self.tokenizer, raga, variant, cfg.target_bars, cfg.rhythm_prompt)))
 
         prompts = [ids for _, _, ids in specs for _ in range(cfg.group_size)]
         texts, completions, truncated = self.generate(prompts, cfg.temperature, cfg.top_p)
@@ -174,7 +177,7 @@ class GRPOTrainer:
         for k, (text, completion, trunc) in enumerate(zip(texts, completions, truncated)):
             raga, variant, prompt = specs[k // cfg.group_size]
             notation = extract(text)
-            report = verify(notation, raga, style=self.cfg.reward_style)
+            report = verify(notation, raga, style=self.cfg.reward_style, target_bars=self.cfg.target_bars)
             copied = copy_fraction(notation)
             novel = self.novel_fraction(notation)
             rows.append(
@@ -231,8 +234,9 @@ class GRPOTrainer:
         keep.sort(key=lambda i: len(rows[i]["prompt"]) + len(rows[i]["completion"]))  # less padding
         n_tokens = sum(len(rows[i]["completion"]) for i in keep)
         batches = []
-        for j in range(0, len(keep), cfg.micro_batch):
-            idx = keep[j : j + cfg.micro_batch]
+        micro = max(1, int(cfg.micro_batch * self.governor.scale))
+        for j in range(0, len(keep), micro):
+            idx = keep[j : j + micro]
             batches.append(
                 make_micro_batch(
                     [rows[i]["prompt"] for i in idx],
@@ -295,14 +299,14 @@ class GRPOTrainer:
     def evaluate(self) -> dict[str, float]:
         cfg = self.cfg
         specs = [(raga, variant) for variant in ("bare", "hinted") for raga in self.ragas]
-        prompts = [chat_prompt(self.tokenizer, r, v) for r, v in specs for _ in range(cfg.eval_samples)]
+        prompts = [chat_prompt(self.tokenizer, r, v, cfg.target_bars, cfg.rhythm_prompt) for r, v in specs for _ in range(cfg.eval_samples)]
         texts, _, _ = self.generate(prompts, EVAL_TEMP, EVAL_TOP_P)
 
         rows = []
         for k, text in enumerate(texts):
             raga, variant = specs[k // cfg.eval_samples]
             notation = extract(text)
-            report = verify(notation, raga, style=self.cfg.reward_style)
+            report = verify(notation, raga, style=self.cfg.reward_style, target_bars=self.cfg.target_bars)
             copied = copy_fraction(notation)
             rows.append({"raga": raga.key, "variant": variant, "reward": report.reward * (1 - copied), "copied": copied, "scores": report.scores, "notation": notation, "violations": report.violations[:6]})
 
@@ -316,7 +320,7 @@ class GRPOTrainer:
             metrics[f"eval/{variant}/reward"] = statistics.mean(r["reward"] for r in group)
             metrics[f"eval/{variant}/good_rate"] = sum(r["reward"] > 0.8 for r in group) / len(group)
             metrics[f"eval/{variant}/no_wrong_notes"] = sum(r["scores"]["allowed"] == 1 for r in group) / len(group)
-            if cfg.reward_style in ("v2", "v3", "v4"):
+            if cfg.reward_style in ("v2", "v3", "v4", "v5"):
                 from ragaz.realprofile import realism
 
                 vals = [realism([RAGA_NOTES(r["notation"]) for r in group if r["raga"] == raga.key], raga.key) for raga in self.ragas]
@@ -328,8 +332,10 @@ class GRPOTrainer:
                 metrics[f"eval/{variant}/novel_bars"] = sum(b not in self.ref_bars for b in bars) / max(1, len(bars))
             metrics[f"eval/{variant}/copied_example"] = statistics.mean(r["copied"] for r in group)
             metrics[f"eval/{variant}/parseable"] = sum(r["scores"]["format"] > 0 for r in group) / len(group)
-            for part in PARTS + (PARTS_V2 if self.cfg.reward_style in ("v2", "v3", "v4") else []) + (PARTS_V4 if self.cfg.reward_style == "v4" else []):
-                metrics[f"eval/{variant}/{part}"] = statistics.mean(r["scores"][part] for r in group)
+            for part in PARTS + (PARTS_V2 if self.cfg.reward_style in ("v2", "v3", "v4", "v5") else []) + (PARTS_V4 if self.cfg.reward_style in ("v4", "v5") else []) + (PARTS_V5 if self.cfg.reward_style == "v5" else []) + (PARTS_LONG if self.cfg.reward_style == "v5" and self.cfg.target_bars >= 16 else []):
+                vals = [r["scores"][part] for r in group if part in r["scores"]]  # e.g. no register for Deshkar
+                if vals:
+                    metrics[f"eval/{variant}/{part}"] = statistics.mean(vals)
             for raga in self.ragas:
                 metrics[f"eval/{variant}/raga/{raga.key}"] = statistics.mean(r["reward"] for r in group if r["raga"] == raga.key)
         metrics["eval/reward"] = statistics.mean(r["reward"] for r in rows)
@@ -341,7 +347,7 @@ class GRPOTrainer:
             twin = {"bhupali": "deshkar", "deshkar": "bhupali"}
             for variant in ("bare", "hinted"):
                 group = [r for r in rows if r["variant"] == variant and r["raga"] in twin]
-                wins = [verify(r["notation"], r["raga"], style=cfg.reward_style).reward > verify(r["notation"], twin[r["raga"]], style=cfg.reward_style).reward for r in group]
+                wins = [verify(r["notation"], r["raga"], style=cfg.reward_style, target_bars=cfg.target_bars).reward > verify(r["notation"], twin[r["raga"]], style=cfg.reward_style, target_bars=cfg.target_bars).reward for r in group]
                 metrics[f"eval/{variant}/twin_accuracy"] = sum(wins) / len(wins)
                 if f"eval/{variant}/real_score" in metrics:
                     # Picks checkpoints in runs with twins: v4 forgot Deshkar while score × realism stayed high.
@@ -425,6 +431,7 @@ class GRPOTrainer:
             if not self.resuming:
                 self.run_eval()  # step 0 = the baseline, on the same dashboard
             while self.step < cfg.steps:
+                scale = self.governor.before_step()
                 mx.reset_peak_memory()
                 t0 = time.time()
                 rows = self.rollout()
@@ -454,9 +461,13 @@ class GRPOTrainer:
                     "time/gen_tokens_per_s": gen_tokens / max(1e-6, t1 - t0),
                     "memory/peak_gb": mx.get_peak_memory() / 2**30,
                     "memory/system_free_gb": psutil.virtual_memory().available / 2**30,
+                    "memory/batch_scale": scale,
+                    "memory/paused_s_total": self.governor.paused_s,
                 }
-                for part in PARTS + (PARTS_V2 if cfg.reward_style in ("v2", "v3", "v4") else []) + (PARTS_V4 if cfg.reward_style == "v4" else []):
-                    metrics[f"train/{part}"] = statistics.mean(r["scores"][part] for r in rows)
+                for part in PARTS + (PARTS_V2 if cfg.reward_style in ("v2", "v3", "v4", "v5") else []) + (PARTS_V4 if cfg.reward_style in ("v4", "v5") else []) + (PARTS_V5 if cfg.reward_style == "v5" else []) + (PARTS_LONG if cfg.reward_style == "v5" and cfg.target_bars >= 16 else []):
+                    vals = [r["scores"][part] for r in rows if part in r["scores"]]
+                    if vals:
+                        metrics[f"train/{part}"] = statistics.mean(vals)
                 for raga in self.ragas:
                     group = [r["reward"] for r in rows if r["raga"] == raga.key]
                     if group:

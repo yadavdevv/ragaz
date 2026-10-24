@@ -43,7 +43,7 @@ class SFTTrainer(GRPOTrainer):
             raga = get_raga(row["raga"])
             completion = self.tokenizer.encode(completion_text(row["notation"])) + [self.eos_id]
             for variant in cfg.sft_variants:
-                examples.append({"raga": raga.key, "prompt": chat_prompt(self.tokenizer, raga, variant), "completion": completion})
+                examples.append({"raga": raga.key, "prompt": chat_prompt(self.tokenizer, raga, variant, cfg.target_bars, cfg.rhythm_prompt), "completion": completion})
         return examples
 
     def sft_step(self, batch: list[dict]) -> dict[str, float]:
@@ -52,8 +52,9 @@ class SFTTrainer(GRPOTrainer):
         batch = sorted(batch, key=lambda e: len(e["prompt"]) + len(e["completion"]))
         n_tokens = sum(len(e["completion"]) for e in batch)
         grads_acc, loss_sum = None, 0.0
-        for j in range(0, len(batch), cfg.micro_batch):
-            part = batch[j : j + cfg.micro_batch]
+        micro = max(1, int(cfg.micro_batch * self.governor.scale))
+        for j in range(0, len(batch), micro):
+            part = batch[j : j + micro]
             mb = make_micro_batch([e["prompt"] for e in part], [e["completion"] for e in part], [1.0] * len(part), self.pad_id)
             loss, grads = self.sft_loss_and_grad(self.model, mb, n_tokens)
             grads_acc = grads if grads_acc is None else tree_map(mx.add, grads_acc, grads)
@@ -83,6 +84,7 @@ class SFTTrainer(GRPOTrainer):
             for epoch in range(cfg.sft_epochs):
                 rng.shuffle(examples)
                 for j in range(0, len(examples), batch_size):
+                    scale = self.governor.before_step()
                     t0 = time.time()
                     mx.reset_peak_memory()
                     stats = self.sft_step(examples[j : j + batch_size])
@@ -94,6 +96,8 @@ class SFTTrainer(GRPOTrainer):
                         "time/step_s": time.time() - t0,
                         "memory/peak_gb": mx.get_peak_memory() / 2**30,
                         "memory/system_free_gb": psutil.virtual_memory().available / 2**30,
+                        "memory/batch_scale": scale,
+                        "memory/paused_s_total": self.governor.paused_s,
                     }
                     self.tracker.log(metrics, self.step)
                     print(f"sft step {self.step:4d}/{total} | epoch {epoch + 1} | loss {stats['train/sft_loss']:.4f} | {metrics['time/step_s']:.0f}s | {metrics['memory/peak_gb']:.1f} GB")

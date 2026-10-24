@@ -33,17 +33,29 @@ def expressive_cents(comp, beat: float, n: int, raga_key: str, library: dict, se
     """
     rng = np.random.default_rng(seed)
     glides, waver = library["glides"].get(raga_key, {}), library["waver"].get(raga_key, {})
+    micro = library.get("micro", {}).get(raga_key, {})
     note_c = [SWARAS.index(x.swara) * 100 + 1200 * x.octave for x in comp.notes]
     cents = np.full(n, float(note_c[0]))
     t = np.arange(n) / SR
     for note, c in zip(comp.notes, note_c):
         a, b = int(note.start * beat * SR), int((note.start + note.duration) * beat * SR)
         cents[a:] = c
-        w = waver.get(note.swara)
         held = (b - a) / SR
-        if w and held > 0.3:
-            fade = np.clip((t[a:b] - t[a] - 0.15) / 0.25, 0, 1)
-            cents[a:b] += fade * w["depth_cents"] * np.sin(2 * np.pi * w["rate_hz"] * (t[a:b] - t[a]) + rng.uniform(0, 2 * np.pi))
+        snippets = micro.get(note.swara)
+        if snippets and held > 0.12:
+            # Replay a real singer's within-note contour (the small irregular ups and downs),
+            # tiled with mirroring if the note is longer than the recorded one.
+            snip = np.asarray(snippets[rng.integers(len(snippets))], dtype=float)
+            reps = int(np.ceil(held * 100 / len(snip))) + 1
+            tiled = np.concatenate([snip if i % 2 == 0 else snip[::-1] for i in range(reps)])
+            curve = np.interp(np.arange(b - a) / SR * 100, np.arange(len(tiled)), tiled)
+            fade = np.clip((t[a:b] - t[a]) / 0.04, 0, 1)
+            cents[a:b] += fade * curve
+        else:
+            w = waver.get(note.swara)
+            if w and held > 0.3:
+                fade = np.clip((t[a:b] - t[a] - 0.15) / 0.25, 0, 1)
+                cents[a:b] += fade * w["depth_cents"] * np.sin(2 * np.pi * w["rate_hz"] * (t[a:b] - t[a]) + rng.uniform(0, 2 * np.pi))
     for prev, nxt, c0, c1 in zip(comp.notes, comp.notes[1:], note_c, note_c[1:]):
         delta = c1 - c0
         if delta == 0:
@@ -56,7 +68,7 @@ def expressive_cents(comp, beat: float, n: int, raga_key: str, library: dict, se
             continue
         g = options[rng.integers(len(options))]
         room = beat * min(prev.duration, nxt.duration)
-        dur = min(g["seconds"], 0.45 * room)
+        dur = min(g["seconds"], 0.6 * room)  # real singers spend ~19% of sung time between notes
         boundary = nxt.start * beat
         a, b = int((boundary - 0.6 * dur) * SR), int((boundary + 0.4 * dur) * SR)
         a, b = max(a, 0), min(b, n)
@@ -167,7 +179,7 @@ def normalize(x: np.ndarray, peak: float = 1.0) -> np.ndarray:
     return x * (peak / max(1e-9, np.max(np.abs(x))))
 
 
-def render(text: str, raga: Raga, sa_hz: float = 261.63, tempo: float = 72, intro: float = 3.0, outro: float = 3.0, expressive: bool = False, voice: str | None = None) -> np.ndarray:
+def render(text: str, raga: Raga, sa_hz: float = 261.63, tempo: float = 100, intro: float = 3.0, outro: float = 3.0, expressive: bool = False, voice: str | None = None) -> np.ndarray:
     library = None
     if expressive or voice:
         import json

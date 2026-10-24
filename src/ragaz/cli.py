@@ -38,7 +38,7 @@ def main() -> None:
     p_render.add_argument("file", help="notation file, or - for stdin")
     p_render.add_argument("--raga", required=True)
     p_render.add_argument("-o", "--out", help="output WAV (default: <file>.wav)")
-    p_render.add_argument("--tempo", type=float, default=72, help="beats per minute")
+    p_render.add_argument("--tempo", type=float, default=100, help="beats per minute (100: our median note then lasts ~0.21 s, the real median)")
     p_render.add_argument("--sa", type=float, default=261.63, help="Sa frequency in Hz")
     p_render.add_argument("--play", action="store_true", help="play with afplay (macOS)")
     p_render.add_argument("--expressive", action="store_true", help="real glides and wavers learned from recordings")

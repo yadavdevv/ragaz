@@ -31,6 +31,9 @@ class GRPOConfig:
     hint_end: float = 0.3  # ...decaying linearly to this
     hint_decay_steps: int = 150
 
+    target_bars: int = 8  # bars asked for in the prompt and rewarded by the length score
+    rhythm_prompt: bool = False  # v5: prompt asks for quick runs and held notes, with an example
+
     # Rollouts
     steps: int = 200
     prompts_per_step: int = 4
@@ -74,6 +77,8 @@ class GRPOConfig:
     hard_memory_gb: float = 9.0  # watchdog kills the run above this
     min_free_gb: float = 3.0  # ...or when the system has less than this free
     max_swap_growth_gb: float = 4.0  # ...or when swap grows by more than this
+    governor_full_gb: float = 5.0  # resource-aware pacing: full batch sizes above this much free memory
+    governor_pause_gb: float = 4.0  # ...half batch sizes between, pause and wait below this
 
     @classmethod
     def load(cls, path: str | Path | None = None, overrides: list[str] | None = None) -> "GRPOConfig":

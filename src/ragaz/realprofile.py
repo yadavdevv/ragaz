@@ -58,6 +58,36 @@ def interval_distribution(notes: list[tuple[str, int, float]]) -> np.ndarray:
     return d / d.sum() if d.sum() else d
 
 
+RHYTHM_BINS = np.arange(-3.0, 3.01, 0.5)  # log2(duration / median duration)
+
+
+def rhythm_histogram(notes: list[tuple[str, int, float]]) -> np.ndarray:
+    """Scale-free shape of note durations: how many notes are quick vs held, relative to the median.
+
+    Works at any tempo (beats or seconds). Real music: a big cluster of quick notes plus
+    a tail of long holds; v4's pieces: almost every note the same length.
+    """
+    d = np.array([x[2] for x in notes if x[2] > 0])
+    if len(d) < 2:
+        return np.zeros(len(RHYTHM_BINS) - 1)
+    h, _ = np.histogram(np.clip(np.log2(d / np.median(d)), -2.99, 2.99), bins=RHYTHM_BINS)
+    return h / h.sum()
+
+
+def register_distribution(notes: list[tuple[str, int, float]]) -> np.ndarray:
+    """Time share in the lower, middle and upper octave. Real singers spend 18–42% of their time
+    in the upper octave; v5c spent 0% (the pitch-class profile is octave-blind, so it missed this)."""
+    d = np.zeros(3)
+    for _, octave, duration in notes:
+        d[min(2, max(0, octave + 1))] += duration
+    return d / d.sum() if d.sum() else d
+
+
+def duration_cv(notes: list[tuple[str, int, float]]) -> float:
+    d = np.array([x[2] for x in notes if x[2] > 0])
+    return float(d.std() / d.mean()) if len(d) > 1 else 0.0
+
+
 def ngrams(notes: list[tuple[str, int, float]]) -> set[str]:
     pcs = [s for s, _, _ in notes]
     return {" ".join(pcs[i : i + NGRAM]) for i in range(len(pcs) - NGRAM + 1)}
@@ -113,6 +143,17 @@ def build(ragas: list[str], test_fraction: float = 0.3, seed: int = 0) -> dict:
     vocab = set().union(*counts.values())
 
     profiles = {"split": split, "ragas": {}}
+    # Rhythm is performance practice, not raga identity: pool it across all ragas (so it
+    # also applies to ragas without recordings, e.g. Deshkar).
+    all_train = [e for raga in ragas for name in split[raga]["train"] for e in excerpts[raga][name]]
+    rhythm = np.mean([rhythm_histogram(e) for e in all_train], axis=0)
+    profiles["rhythm"] = {
+        "histogram": rhythm.tolist(),
+        "calibration": {
+            "shape": sorted(jsd(rhythm_histogram(e), rhythm) for e in all_train),
+            "cv": sorted(duration_cv(e) for e in all_train),
+        },
+    }
     for raga in ragas:
         train = [e for name in split[raga]["train"] for e in excerpts[raga][name]]
         pc = np.mean([pc_distribution(e) for e in train], axis=0)
@@ -126,12 +167,14 @@ def build(ragas: list[str], test_fraction: float = 0.3, seed: int = 0) -> dict:
             if counts[raga][g] >= 5 and lift > 1.5:
                 phrases[g] = p_here * math.log(lift)
         top = dict(sorted(phrases.items(), key=lambda kv: -kv[1])[:TOP_PHRASES])
-        profile = {"pc": pc.tolist(), "intervals": iv.tolist(), "phrases": top}
+        reg = np.mean([register_distribution(e) for e in train], axis=0)
+        profile = {"pc": pc.tolist(), "intervals": iv.tolist(), "phrases": top, "register": reg.tolist()}
         # Calibration: raw values on this raga's own training excerpts.
         profile["calibration"] = {
             "profile": sorted(jsd(pc_distribution(e), pc) for e in train),
             "motion": sorted(jsd(interval_distribution(e), iv) for e in train),
             "phrases": sorted(phrase_raw(e, top) for e in train),
+            "register": sorted(jsd(register_distribution(e), reg) for e in train),
         }
         profiles["ragas"][raga] = profile
         names = [f"{g} ({w:.3f})" for g, w in list(top.items())[:5]]
@@ -145,6 +188,18 @@ def phrase_raw(notes: list[tuple[str, int, float]], phrases: dict[str, float]) -
 
 
 # ------------------------------------------------------------------- score
+
+
+def rhythm_scores(notes: list[tuple[str, int, float]], profiles: dict | None = None) -> dict[str, float]:
+    """Rhythm realism in [0, 1]: duration shape (JSD vs pooled real) and spread (CV), each
+    calibrated so a typical real excerpt scores 1. Empty if profiles predate rhythm."""
+    profiles = profiles or load_profiles()
+    if not profiles or "rhythm" not in profiles:
+        return {}
+    r = profiles["rhythm"]
+    shape = calibrated(jsd(rhythm_histogram(notes), np.array(r["histogram"])), r["calibration"]["shape"], higher_is_better=False)
+    spread = calibrated(duration_cv(notes), r["calibration"]["cv"], higher_is_better=True)
+    return {"rhythm": 0.5 * shape + 0.5 * spread}
 
 
 @cache
@@ -168,7 +223,10 @@ def style_scores(notes: list[tuple[str, int, float]], raga: str) -> dict[str, fl
         return None
     prof = profiles["ragas"][raga]
     cal = prof["calibration"]
-    return {
+    extra = {}
+    if "register" in prof:
+        extra["register"] = calibrated(jsd(register_distribution(notes), np.array(prof["register"])), cal["register"], higher_is_better=False)
+    return rhythm_scores(notes, profiles) | extra | {
         "profile": calibrated(jsd(pc_distribution(notes), np.array(prof["pc"])), cal["profile"], higher_is_better=False),
         "motion": calibrated(jsd(interval_distribution(notes), np.array(prof["intervals"])), cal["motion"], higher_is_better=False),
         "phrases": calibrated(phrase_raw(notes, prof["phrases"]), cal["phrases"], higher_is_better=True),

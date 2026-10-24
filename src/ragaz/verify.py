@@ -35,6 +35,15 @@ WEIGHTS = {"tala": 0.25, "emphasis": 0.25, "melody": 0.2, "pakad": 0.3}
 # Deshkar) fall back to the rulebook terms alone.
 WEIGHTS_V4 = {"tala": 0.15, "rank": 0.15, "pakad": 0.2, "phrases": 0.4, "motion": 0.1}
 WEIGHTS_V4_RULES_ONLY = {"tala": 0.25, "rank": 0.35, "pakad": 0.4}
+# v5 = v4 + rhythm measured from real performances (pooled over ragas, so every raga has it).
+# Rhythm is a *multiplier* in v5 (reward × (RHYTHM_FLOOR + (1 − RHYTHM_FLOOR)·rhythm)), not a
+# weighted term: as a 0.2 weight, GRPO traded it away (eval rhythm 0.36 → 0.15 in 20 steps),
+# because one note per beat makes beats and phrases easier.
+RHYTHM_FLOOR = 0.4
+# register (time per octave vs real) added after finding v5c never left the middle octave
+# while real singers spend 18–46% of their time in the upper one.
+WEIGHTS_V5 = {"tala": 0.15, "rank": 0.15, "pakad": 0.15, "phrases": 0.3, "motion": 0.1, "register": 0.15}
+WEIGHTS_V5_RULES_ONLY = {"tala": 0.25, "rank": 0.35, "pakad": 0.4}
 FORBIDDEN_FACTOR = 0.4  # v4: each forbidden note multiplies the reward by this
 
 # v3: like v2, but the note profile is scored per GRPO group in the trainer (pooled,
@@ -149,6 +158,26 @@ def score_rank(comp: Composition, raga: Raga) -> float:
     return (vadi + samvadi) / 2
 
 
+def score_arc(comp: Composition, violations: list[str]) -> float:
+    """Shape of a long piece, from the rulebook of a bandish: the first half (sthayi) stays
+    in the middle register and resolves to Sa; the second half (antara) rises and reaches
+    upper Sa. Applies to pieces of 16+ bars only."""
+    half = len(comp.bars) // 2
+    first = [n for n in comp.notes if n.bar < half]
+    second = [n for n in comp.notes if n.bar >= half]
+    if not first or not second:
+        return 0.0
+    mean = lambda ns: sum(n.semitones * n.duration for n in ns) / sum(n.duration for n in ns)  # noqa: E731
+    rises = 1.0 if mean(second) > mean(first) + 1 else 0.0
+    upper_sa = 1.0 if any(n.swara == "S" and n.octave >= 1 for n in second) else 0.0
+    resolves = 1.0 if first[-1].swara == "S" else 0.0
+    if not rises:
+        violations.append("second half does not rise above the first (antara)")
+    if not upper_sa:
+        violations.append("second half never reaches upper Sa (S')")
+    return (rises + upper_sa + resolves) / 3
+
+
 def score_purity(comp: Composition, raga: Raga) -> float:
     """One forbidden note can spoil a raga: v3 let a Pa into Malkauns at only ~6% cost."""
     return FORBIDDEN_FACTOR ** sum(n.swara not in raga.notes for n in comp.notes)
@@ -182,13 +211,13 @@ def score_variety(comp: Composition, raga: Raga, violations: list[str], stats: d
     return coverage * repetition * runs * hold_score
 
 
-def score_length(comp: Composition, violations: list[str]) -> float:
-    """Full credit for exactly two cycles. Run 2 settled on 4 bars when anything up to 8 passed."""
+def score_length(comp: Composition, violations: list[str], target: int = TARGET_BARS) -> float:
+    """Full credit for exactly the requested bars. Run 2 settled on 4 bars when anything up to 8 passed."""
     bars = len(comp.bars)
-    if bars == TARGET_BARS:
+    if bars == target:
         return 1.0
-    violations.append(f"{bars} bars, asked for {TARGET_BARS}")
-    return bars / TARGET_BARS if bars < TARGET_BARS else TARGET_BARS / bars
+    violations.append(f"{bars} bars, asked for {target}")
+    return bars / target if bars < target else target / bars
 
 
 def score_melody(comp: Composition, violations: list[str], stats: dict) -> float:
@@ -257,7 +286,7 @@ def score_pakad(comp: Composition, raga: Raga, violations: list[str], stats: dic
     return score
 
 
-def verify(text: str, raga: str | Raga, style: str = "v1") -> Report:
+def verify(text: str, raga: str | Raga, style: str = "v1", target_bars: int = TARGET_BARS) -> Report:
     """``style="v1"``: hand-written style rules. ``"v2"``: style calibrated on real recordings."""
     raga = get_raga(raga) if isinstance(raga, str) else raga
     comp = parse(text)
@@ -269,8 +298,12 @@ def verify(text: str, raga: str | Raga, style: str = "v1") -> Report:
         scores = {"format": 0.0, "allowed": 0.0, "beats": 0.0, "tala": 0.0, "emphasis": 0.0, "melody": 0.0, "pakad": 0.0, "variety": 0.0, "length": 0.0}
         if style in ("v2", "v3", "v4"):
             scores |= {"profile": 0.0, "motion": 0.0, "phrases": 0.0}
-        if style == "v4":
+        if style in ("v4", "v5"):
             scores |= {"rank": 0.0, "purity": 0.0}
+        if style == "v5":
+            scores["rhythm"] = 0.0
+            if target_bars >= 16:
+                scores["arc"] = 0.0
         return Report(raga.name, scores, 0.0, violations, stats)
 
     scores = {
@@ -282,23 +315,25 @@ def verify(text: str, raga: str | Raga, style: str = "v1") -> Report:
         "melody": score_melody(comp, violations, stats),
         "pakad": score_pakad(comp, raga, violations, stats),
         "variety": score_variety(comp, raga, violations, stats),
-        "length": score_length(comp, violations),
+        "length": score_length(comp, violations, target_bars),
     }
     weights = WEIGHTS
     note_gate = scores["allowed"] ** 2
-    if style in ("v2", "v3", "v4"):
-        from ragaz.realprofile import style_scores
+    if style in ("v2", "v3", "v4", "v5"):
+        from ragaz.realprofile import rhythm_scores, style_scores
 
         real = style_scores([(n.swara, n.octave, n.duration) for n in comp.notes], raga.key)
-        if style == "v4":
+        if style in ("v4", "v5"):
             scores["rank"] = score_rank(comp, raga)
             scores["purity"] = note_gate = score_purity(comp, raga)
+            if style == "v5":
+                scores |= rhythm_scores([(n.swara, n.octave, n.duration) for n in comp.notes])
             if real is None:  # no recordings for this raga: rulebook identity only
                 scores |= {"profile": 0.0, "motion": 0.0, "phrases": 0.0}
-                weights = WEIGHTS_V4_RULES_ONLY
+                weights = WEIGHTS_V4_RULES_ONLY if style == "v4" else WEIGHTS_V5_RULES_ONLY
             else:
-                scores |= real
-                weights = WEIGHTS_V4
+                scores |= {k: v for k, v in real.items() if k != "rhythm"}
+                weights = WEIGHTS_V4 if style == "v4" else WEIGHTS_V5
         else:
             if real is None:
                 raise FileNotFoundError("v2/v3 style needs data/real_profiles.json and a profile for this raga")
@@ -306,7 +341,14 @@ def verify(text: str, raga: str | Raga, style: str = "v1") -> Report:
             weights = WEIGHTS_V2 if style == "v2" else WEIGHTS_V3
         if real is not None:
             stats.update({k: round(v, 2) for k, v in real.items()})
+        if style in ("v2", "v3") and "rhythm" in scores:
+            del scores["rhythm"]
+    if style == "v5" and target_bars >= 16:
+        # Long pieces: 10% of the shaped score is the sthayi → antara arc.
+        scores["arc"] = score_arc(comp, violations)
+        weights = {k: 0.9 * w for k, w in weights.items()} | {"arc": 0.1}
     shaped = sum(weights[k] * scores[k] for k in weights)
-    reward = scores["format"] * note_gate * scores["beats"] ** 2 * scores["variety"] * scores["length"] * shaped
+    rhythm_gate = RHYTHM_FLOOR + (1 - RHYTHM_FLOOR) * scores["rhythm"] if style == "v5" else 1.0
+    reward = scores["format"] * note_gate * scores["beats"] ** 2 * scores["variety"] * scores["length"] * rhythm_gate * shaped
     stats["beats"] = comp.beats
     return Report(raga.name, scores, reward, violations, stats)

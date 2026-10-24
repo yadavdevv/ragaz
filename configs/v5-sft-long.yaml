@@ -1,0 +1,34 @@
+# Teach 16-bar pieces with a sthayi → antara arc and real register use. v5d showed the model
+# writes 8 bars when asked for 16 (63/64 pieces) and never reaches upper Sa (0/64), while
+# real singers spend 18–46% of their time in the upper octave. Data: scripts/lengthen.py
+# (good sthayi + lifted antara, scored with the 16-bar v5 reward incl. arc and register).
+name: v5-sft-long
+model: mlx-community/Qwen3-0.6B-bf16
+tracker: trackio
+init_adapter: runs/grpo/v5c-rhythm-gate-20261024-1704/checkpoints/best
+ragas: [bhupali, yaman, malkauns, deshkar]
+reward_style: v5
+rhythm_prompt: true
+target_bars: 16
+
+sft_data: data/long_v5.jsonl
+sft_epochs: 2
+sft_variants: [bare, hinted]
+prompts_per_step: 4
+group_size: 4            # batch 16
+
+lr: 5.0e-5
+warmup_steps: 5
+beta: 0.0
+lora_rank: 16
+lora_layers: 16
+max_tokens: 320
+
+eval_every: 30
+eval_samples: 16
+save_every: 30
+best_metric: eval/bare/real_twin_score
+micro_batch: 2
+gen_batch: 4
+memory_gb: 4
+hard_memory_gb: 7

@@ -30,6 +30,13 @@ PURPOSE = {
     "track-b-v3": "v3 reward (group note profile, picked by realism): best realism composer",
     "v4-sft": "v4 SFT: anchors raga names (incl. Deshkar) to twin-filtered pieces; twin 84–89% stable",
     "v4-final": "v4 final: GRPO from v4-sft, hints held at 30%; twin 96–99%, realism 0.94 (Deshkar somewhat exaggerated)",
+    "v5a-rhythm": "v5a: GRPO with rhythm reward; rhythm 0.00 in every rollout (never tried), stopped",
+    "v5-sft-rhythm": "Rhythm SFT on 600 re-timed pieces (stopped by watchdog at 70; resumed as -b)",
+    "v5b-rhythm-grpo": "v5b: rhythm as a 0.2 weight was traded away (0.36 → 0.15), stopped",
+    "v5c-rhythm-gate": "v5c: rhythm as a multiplier; rhythm 0.47, real-like timing at 100 bpm",
+    "v5d-long": "v5d: 16-bar GRPO from v5c; still wrote 8 bars, never reached upper Sa, stopped",
+    "v5-sft-long": "16-bar SFT (sthayi + lifted antara): 16 bars 61/64, upper Sa 63/64, register 0.98",
+    "v5e-long-grpo": "v5e: 16-bar GRPO polish; best step 30 (register 1.0, arc 0.84, twin 0.91)",
     "v4-hybrid": "v4 hybrid (rulebook + real music) + Deshkar: twin test 90% at step 40–60, forgotten after hints faded",
 }
 
