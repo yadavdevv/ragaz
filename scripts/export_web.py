@@ -281,7 +281,8 @@ def latest(all_ragas: dict) -> dict:
 
     Scores are the v5 reward the run was trained and evaluated with (the browser verifier
     implements v2, so these pieces are shown with their own run's scores, not re-scored).
-    Recordings: out/v5e-<raga>-{expressive,violin}.wav, converted to MP3 in web/public/audio.
+    Recordings: out/v5e-<raga>-{vocal,expressive}.wav, converted to MP3 in web/public/audio.
+    vocal = the DDSP voice trained on Carnatic women singers; expressive = the flute synth.
     """
     import subprocess
 
@@ -309,7 +310,7 @@ def latest(all_ragas: dict) -> dict:
         flat = notation.replace("\n", " ")
         src = next((r for r in rows + best if r["notation"].strip().replace("\n", " ") == flat), None)
         files = {}
-        for voice in ["violin", "expressive"]:
+        for voice in ["vocal", "expressive"]:
             wav = Path(f"out/v5e-{key}-{voice}.wav")
             if wav.exists():
                 mp3 = audio / f"v5e-{key}-{voice}.mp3"  # MP3: plays in every browser
@@ -326,8 +327,8 @@ def latest(all_ragas: dict) -> dict:
         "ragas": [raga_entry(r) for r in all_ragas.values()],
         "pieces": pieces, "recordings": recordings,
         "voices": {
-            "violin": "a DDSP violin trained on 43 minutes of solo violin stems from Saraga Carnatic concerts (CC BY-NC-SA 4.0), playing the notes with glides and wavers learned from recordings",
-            "expressive": "the same notes with learned glides and wavers, in a simple synthesised voice",
+            "vocal": "a DDSP voice trained on separately miked vocal tracks of 12 women singers from Saraga Carnatic concerts (CC BY-NC-SA 4.0), singing the notes with glides and wavers learned from recordings",
+            "expressive": "a synthesised flute playing the same notes with glides and wavers learned from real singers",
         },
     }
 
