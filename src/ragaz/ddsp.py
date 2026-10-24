@@ -1,7 +1,7 @@
 """A DDSP voice: learn a real instrument's timbre from recordings (Engel et al., ICLR 2020).
 
-    uv run python -m ragaz.ddsp prepare   # audio → (f0, loudness, audio) segments
-    uv run python -m ragaz.ddsp train     # fit the decoder (PyTorch, MPS)
+    uv run python -m ragaz.ddsp prepare [violin|vocal]         # audio → (f0, loudness, audio) segments
+    uv run python -m ragaz.ddsp train [steps] [violin|vocal]   # fit the decoder (PyTorch, MPS)
 
 The network never generates raw audio. It maps (pitch, loudness) per frame to the
 controls of classic synthesizers: the amplitude of each harmonic, and the spectrum
@@ -9,8 +9,10 @@ of a noise component (bow / breath). A harmonic oscillator bank, filtered noise 
 a learned reverb do the actual synthesis. Because pitch is an *input*, every shruti
 and glide the composer and expression model ask for comes out exactly.
 
-Training data: violin stems from Saraga Carnatic multitrack recordings
-(Zenodo 10.5281/zenodo.4301737, CC BY-NC-SA 4.0, research/non-commercial).
+Training data (Saraga Carnatic multitrack, Zenodo 10.5281/zenodo.4301737, CC BY-NC-SA 4.0,
+research/non-commercial):
+  violin  10 violin stems from 10 concerts
+  vocal   12 vocal stems from 12 women singers (one each), separately miked
 """
 
 import json
@@ -27,7 +29,11 @@ HOP = 64  # 250 frames per second
 SEG_S = 4.0
 N_HARMONICS = 64
 N_NOISE = 65
-DATA = Path("data/voice")
+DATA = Path("data/voice")  # violin (the first voice); other instruments get data/voice-<name>
+
+
+def data_dir(name: str = "violin") -> Path:
+    return DATA if name == "violin" else Path(f"data/voice-{name}")
 
 
 # ------------------------------------------------------------------ prepare
@@ -70,11 +76,12 @@ def pitch(audio: np.ndarray, device: str) -> tuple[np.ndarray, np.ndarray]:
     return f0[0, :n].cpu().numpy(), periodicity[0, :n].cpu().numpy()
 
 
-def prepare(src: Path, minutes_per_file: float = 6.0, min_voiced: float = 0.6) -> None:
+def prepare(src: Path, minutes_per_file: float = 6.0, min_voiced: float = 0.6, name: str = "violin") -> None:
     import torch
 
     device = "mps" if torch.backends.mps.is_available() else "cpu"
-    DATA.mkdir(parents=True, exist_ok=True)
+    out = data_dir(name)
+    out.mkdir(parents=True, exist_ok=True)
     seg_frames = int(SEG_S * SR / HOP)
     f0s, louds, audios = [], [], []
     for path in sorted(src.glob("*.mp3")):
@@ -98,8 +105,8 @@ def prepare(src: Path, minutes_per_file: float = 6.0, min_voiced: float = 0.6) -
             audios.append(audio[s * HOP : (s + seg_frames) * HOP])
             kept += 1
         print(f"{path.name[:50]:<50} {len(audio) / SR / 60:4.1f} min → {kept} segments", flush=True)
-    np.savez_compressed(DATA / "segments.npz", f0=np.stack(f0s), loudness=np.stack(louds), audio=np.stack(audios))
-    print(f"{len(f0s)} segments × {SEG_S:.0f} s = {len(f0s) * SEG_S / 60:.1f} min → {DATA / 'segments.npz'}")
+    np.savez_compressed(out / "segments.npz", f0=np.stack(f0s), loudness=np.stack(louds), audio=np.stack(audios))
+    print(f"{len(f0s)} segments × {SEG_S:.0f} s = {len(f0s) * SEG_S / 60:.1f} min → {out / 'segments.npz'}")
 
 
 # -------------------------------------------------------------------- model
@@ -181,18 +188,18 @@ def spectral_loss(pred, target, ffts=(2048, 1024, 512, 256, 128, 64)):
 # -------------------------------------------------------------------- train
 
 
-def train(steps: int = 6000, batch: int = 8, lr: float = 1e-3, out: Path = Path("runs/voice")) -> None:
+def train(steps: int = 6000, batch: int = 8, lr: float = 1e-3, out: Path = Path("runs/voice"), name: str = "violin") -> None:
     import torch
 
     from ragaz.watchdog import MemoryWatchdog
 
     device = "mps" if torch.backends.mps.is_available() else "cpu"
     stamp = time.strftime("%Y%m%d-%H%M")
-    run = out / f"violin-{stamp}"
+    run = out / f"{name}-{stamp}"
     run.mkdir(parents=True, exist_ok=True)
     MemoryWatchdog(max_gb=1000, min_free_gb=3.0, max_swap_growth_gb=4.0, marker=run / "KILLED_BY_WATCHDOG.txt").start()
 
-    data = np.load(DATA / "segments.npz")
+    data = np.load(data_dir(name) / "segments.npz")
     f0, ld, audio = (torch.from_numpy(data[k]).float() for k in ("f0", "loudness", "audio"))
     n = len(f0)
     val = torch.arange(n) % 10 == 0  # every 10th segment held out
@@ -205,7 +212,7 @@ def train(steps: int = 6000, batch: int = 8, lr: float = 1e-3, out: Path = Path(
 
     import trackio
 
-    trackio.init(project="ragaz-voice", name=run.name, config={"steps": steps, "batch": batch, "lr": lr, "segments": n}, embed=False)
+    trackio.init(project="ragaz-voice", name=run.name, config={"steps": steps, "batch": batch, "lr": lr, "segments": n, "instrument": name}, embed=False)
     train_idx = torch.nonzero(~val).squeeze(1)
     val_idx = torch.nonzero(val).squeeze(1)[:16]
     # 1-second crops keep memory small; the GRU still sees continuous context within the crop.
@@ -250,9 +257,10 @@ def train(steps: int = 6000, batch: int = 8, lr: float = 1e-3, out: Path = Path(
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "prepare":
-        prepare(Path("data/external/saraga/violin"))
+        name = sys.argv[2] if len(sys.argv) > 2 else "violin"
+        prepare(Path(f"data/external/saraga/{name}"), name=name)
     elif cmd == "train":
-        train(steps=int(sys.argv[2]) if len(sys.argv) > 2 else 6000)
+        train(steps=int(sys.argv[2]) if len(sys.argv) > 2 else 6000, name=sys.argv[3] if len(sys.argv) > 3 else "violin")
     else:
         print(__doc__)
 
@@ -260,25 +268,25 @@ if __name__ == "__main__":
 # ------------------------------------------------------------------- render
 
 
-def load_voice(run: Path | None = None):
-    """The trained decoder (latest violin run's best checkpoint by default), on CPU for rendering."""
+def load_voice(run: Path | None = None, name: str = "violin"):
+    """The trained decoder (latest run of that instrument, best checkpoint by default), on CPU for rendering."""
     import torch
 
-    run = run or max(Path("runs/voice").glob("violin-*"), key=lambda p: p.stat().st_mtime)
+    run = run or max(Path("runs/voice").glob(f"{name}-*"), key=lambda p: p.stat().st_mtime)
     model = build_model()
     model.load_state_dict(torch.load(run / "best.pt", map_location="cpu"))
     model.eval()
     return model
 
 
-def loudness_reference() -> tuple[float, float]:
+def loudness_reference(name: str = "violin") -> tuple[float, float]:
     """Median and spread of voiced loudness in the training data, so rendered bowing sits in range."""
-    data = np.load(DATA / "segments.npz")
+    data = np.load(data_dir(name) / "segments.npz")
     voiced = data["loudness"][data["f0"] > 0]
     return float(np.median(voiced)), float(np.percentile(voiced, 90) - np.percentile(voiced, 10))
 
 
-def bowed_loudness(comp, beat: float, frames: int, level: float, spread: float) -> np.ndarray:
+def bowed_loudness(comp, beat: float, frames: int, level: float, spread: float, attack: float = 0.08) -> np.ndarray:
     """A loudness curve (dB per frame): each note swells in, sustains, and eases off; silence around."""
     fps = SR / HOP
     ld = np.full(frames, level - 60.0)
@@ -286,14 +294,14 @@ def bowed_loudness(comp, beat: float, frames: int, level: float, spread: float) 
         a, b = int(note.start * beat * fps), int((note.start + note.duration) * beat * fps)
         n = max(1, b - a)
         t = np.arange(n) / fps
-        swell = np.minimum(1, t / 0.08)  # 80 ms bow attack
+        swell = np.minimum(1, t / attack)  # 80 ms bow attack
         ease = 1 - 0.25 * (t / max(t[-1], 1e-6))  # slight decay across the note
         ld[a:b] = level - 0.5 * spread + spread * 0.8 * swell * ease
     k = max(1, int(0.02 * fps))
     return np.convolve(np.pad(ld, k, mode="edge"), np.ones(k) / k, mode="same")[k:-k]
 
 
-def render_voice(text: str, raga_key: str, sa_hz: float, tempo: float, library: dict, model=None) -> np.ndarray:
+def render_voice(text: str, raga_key: str, sa_hz: float, tempo: float, library: dict, model=None, name: str = "violin") -> np.ndarray:
     """Composer notation → expressive pitch (real glides/wavers) + bowed loudness → DDSP violin, at 16 kHz."""
     import torch
 
@@ -309,9 +317,9 @@ def render_voice(text: str, raga_key: str, sa_hz: float, tempo: float, library: 
     cents = expressive_cents(comp, beat, n_render, raga_key, library)
     cents_frames = cents[(np.arange(frames) * HOP * RENDER_SR / SR).astype(int).clip(0, n_render - 1)]
     f0 = sa_hz * 2 ** (cents_frames / 1200)
-    level, spread = loudness_reference()
-    ld = bowed_loudness(comp, beat, frames, level, spread)
-    model = model or load_voice()
+    level, spread = loudness_reference(name)
+    ld = bowed_loudness(comp, beat, frames, level, spread, attack=0.13 if name == "vocal" else 0.08)  # a singer swells in more slowly than a bow
+    model = model or load_voice(name=name)
     with torch.no_grad():
         audio = model(torch.from_numpy(f0).float()[None], torch.from_numpy(ld).float()[None])[0].numpy()
     return audio
