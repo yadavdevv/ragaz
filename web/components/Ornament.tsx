@@ -138,7 +138,7 @@ export function Rubric({ children, className = "", tone = "paper" }: { children:
  *  a vermilion band between ink and gold rules, with rosettes at the corners. */
 export function PageFrame() {
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-[58] hidden lg:block">
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-[61] hidden lg:block">
       <div className="absolute inset-[10px] border-[5px] border-sindoor/80" />
       <div className="absolute inset-[7px] border border-kajal/50" />
       <div className="absolute inset-[17px] border border-sona/80" />

@@ -21,6 +21,7 @@ const LATIN: Record<string, string> = { S: "Sa", r: "re", R: "Re", g: "ga", G: "
 const KEYMAP = "awsedftgyhujkolp;'";
 const hz = (m: number) => 440 * 2 ** ((m - 69) / 12);
 const NONE: never[] = [];
+const CHEVRON = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path d='M1 1.5l5 5 5-5' fill='none' stroke='%23131A2B' stroke-width='1.6'/></svg>")`;
 
 export function FullHarmonium() {
   const data = useSite((s) => s.data);
@@ -110,25 +111,25 @@ export function FullHarmonium() {
   return (
     <div className="select-none">
       {/* controls, as the stops and scale changer of a real instrument */}
-      <div className="mb-5 flex flex-wrap items-end gap-x-8 gap-y-4 font-sans text-[14px] text-sepia">
+      <div className="mb-5 flex flex-wrap items-end gap-x-6 gap-y-4 font-sans text-[14px] text-sepia">
         <label className="flex flex-col gap-1.5">
-          <span className="text-[12px] uppercase tracking-[0.18em]">Scale changer · Sa is</span>
-          <select value={saPc} onChange={(e) => { tick("soft"); getEngine().reedsOff(); setHeld(new Set()); setSaPc(+e.target.value); }} className="rounded-full border border-rule bg-leaf px-4 py-2 text-kajal">
+          <span className="text-[12px] uppercase tracking-[0.18em]">Sa is · scale changer</span>
+          <select value={saPc} onChange={(e) => { tick("soft"); getEngine().reedsOff(); setHeld(new Set()); setSaPc(+e.target.value); }} className="h-11 appearance-none rounded-full border border-rule bg-leaf bg-[length:12px] bg-[right_1rem_center] bg-no-repeat pl-4 pr-10 text-[15px] text-kajal transition hover:border-sindoor focus:border-sindoor focus:outline-none" style={{ backgroundImage: CHEVRON }}>
             {WESTERN.map((n, i) => <option key={n} value={i}>{n}</option>)}
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="text-[12px] uppercase tracking-[0.18em]">Show a raga's notes</span>
-          <select value={raga} onChange={(e) => { tick("soft"); setRaga(e.target.value); }} className="rounded-full border border-rule bg-leaf px-4 py-2 text-kajal">
+          <span className="text-[12px] uppercase tracking-[0.18em]">Highlight a raga</span>
+          <select value={raga} onChange={(e) => { tick("soft"); setRaga(e.target.value); }} className="h-11 appearance-none rounded-full border border-rule bg-leaf bg-[length:12px] bg-[right_1rem_center] bg-no-repeat pl-4 pr-10 text-[15px] text-kajal transition hover:border-sindoor focus:border-sindoor focus:outline-none" style={{ backgroundImage: CHEVRON }}>
             <option value="none">None</option>
             {ragas.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
           </select>
         </label>
         <div className="flex flex-col gap-1.5">
-          <span className="text-[12px] uppercase tracking-[0.18em]">Labels</span>
-          <div className="flex rounded-full border border-rule p-1">
+          <span className="text-[12px] uppercase tracking-[0.18em]">Note names</span>
+          <div className="flex h-11 items-center rounded-full border border-rule bg-leaf p-1">
             {(["deva", "latin", "western"] as const).map((l) => (
-              <button key={l} onClick={() => { tick("soft"); setLabels(l); }} className={`rounded-full px-3 py-1 ${labels === l ? "bg-kajal text-paper" : "text-kajal"}`}>{l === "deva" ? "सा रे ग" : l === "latin" ? "Sa Re Ga" : "C D E"}</button>
+              <button key={l} onClick={() => { tick("soft"); setLabels(l); }} className={`h-full rounded-full px-4 text-[15px] transition ${labels === l ? "bg-kajal text-paper" : "text-kajal hover:text-sindoor"}`}>{l === "deva" ? "सा रे ग" : l === "latin" ? "Sa Re Ga" : "C D E"}</button>
             ))}
           </div>
         </div>

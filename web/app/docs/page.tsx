@@ -3,7 +3,7 @@
 import katex from "katex";
 import { useMemo } from "react";
 import { Footer } from "@/components/Footer";
-import { FloralBand } from "@/components/Ornament";
+import { FloralBand, Rubric } from "@/components/Ornament";
 import { RiseChars } from "@/components/Text";
 import { PAINTINGS } from "@/lib/art";
 import { useData } from "@/lib/site";
@@ -24,14 +24,14 @@ export default function Docs() {
   const runs = data ? Object.values(data.journey).map((j) => (j as unknown as { run: string }).run) : [];
   return (
     <main className="wasli text-kajal">
-      <section className="px-6 pb-16 pt-36 sm:px-10">
+      <section className="px-6 pb-16 pt-40 sm:px-10">
         <div className="mx-auto max-w-[1400px]">
-          <div className="text-[12px] uppercase tracking-[0.24em] text-kajal/50">Reference</div>
+          <Rubric>Reference</Rubric>
           <h1 className="mt-4 font-display text-[clamp(72px,12vw,200px)] leading-[0.85]"><RiseChars text="Docs." /></h1>
         </div>
       </section>
       <FloralBand />
-      <section className="px-6 pb-32 sm:px-10">
+      <section className="px-6 pb-32 pt-14 sm:px-10">
         <div className="mx-auto grid max-w-[1400px] gap-16 lg:grid-cols-[220px_1fr]">
           <nav className="hidden space-y-3 text-[16px] lg:sticky lg:top-28 lg:block lg:self-start">
             {SECTIONS.map((s) => <a key={s.id} href={`#${s.id}`} className="block text-kajal/60 hover:text-kajal">{s.t}</a>)}
@@ -40,7 +40,7 @@ export default function Docs() {
             <article id="notation">
               <h2 className="font-display text-[56px] leading-none text-kajal">Notation</h2>
               <p className="mt-6">The model writes plain-text sargam. Each token is one beat; <code className="rounded bg-paper2 px-1.5 text-kajal">|</code> separates bars. Uppercase letters are natural (shuddh) notes and lowercase are flat (komal), except Ma: <code className="rounded bg-paper2 px-1.5 text-kajal">m</code> is natural and <code className="rounded bg-paper2 px-1.5 text-kajal">M</code> is sharp (tivra). A dot before a note means the lower octave, an apostrophe after it the upper. <code className="rounded bg-paper2 px-1.5 text-kajal">-</code> holds the previous note for another beat; two notes in one token split the beat.</p>
-              <pre className="mt-6 overflow-x-auto rounded-2xl bg-kajal p-6 font-mono text-[15px] tracking-wider text-paper">{ex}</pre>
+              <pre className="mt-6 whitespace-pre-wrap break-words rounded-2xl bg-kajal p-6 font-mono text-[15px] leading-[1.9] tracking-wider text-paper">{ex.split(" | ").reduce((acc: string[], bar, i) => { (i % 4 ? acc[acc.length - 1] += "  |  " + bar : acc.push(bar)); return acc; }, []).join("\n")}</pre>
             </article>
             <article id="reward">
               <h2 className="font-display text-[56px] leading-none text-kajal">The reward</h2>
