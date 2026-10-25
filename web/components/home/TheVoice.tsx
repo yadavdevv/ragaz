@@ -55,7 +55,7 @@ export function TheVoice({ data }: { data: Data }) {
           </div>
           <Reveal className="space-y-5 text-[18px] leading-[1.65] text-sepia lg:pt-6">
             <p><span className="text-kajal">The indigo line is a real voice</span>, traced from the pitch of a concert recording. It never sits still: it slides into notes (meend), shakes on them (gamak), and lingers longer than any notation admits.</p>
-            <p><span className="text-gulal">The yellow line is the model</span>: only the notes, held steady, four to a bar. Your browser sings both with the same voice, so you can hear what lives between them.</p>
+            <p><span className="text-gulal">The red line is the model</span>: only the notes, held steady, four to a bar. Your browser sings both with the same voice, so you can hear what lives between them.</p>
             <p className="font-sans text-[13px] leading-[1.6]">Singer's line: “{voice.title}”, resynthesised from its pitch track, not the original audio. {voice.source}.</p>
           </Reveal>
         </div>

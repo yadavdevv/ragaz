@@ -139,6 +139,8 @@ export function Rubric({ children, className = "", tone = "paper" }: { children:
 export function PageFrame() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-[61] hidden lg:block">
+      {/* a paper mat outside the frame, so the page never shows beyond its border */}
+      <div className="absolute inset-[22px] shadow-[0_0_0_40px_#F1E6CF]" />
       <div className="absolute inset-[10px] border-[5px] border-sindoor/80" />
       <div className="absolute inset-[7px] border border-kajal/50" />
       <div className="absolute inset-[17px] border border-sona/80" />

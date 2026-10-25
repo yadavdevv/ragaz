@@ -58,7 +58,7 @@ export function Nav() {
 
   return (
     <>
-      <header className={`wasli fixed inset-x-0 top-0 z-[60] border-b border-rule/80 transition-transform duration-500 ease-out ${hidden && !menu ? "-translate-y-full" : ""}`}>
+      <header className={`wasli fixed inset-x-0 top-0 z-[60] border-b border-rule/80 transition-transform duration-500 ease-out lg:inset-x-[22px] lg:top-[22px] ${hidden && !menu ? "-translate-y-full lg:translate-y-[calc(-100%-24px)]" : ""}`}>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center px-5 py-3.5 font-sans text-[14.5px] sm:px-10">
           <nav className="hidden items-center gap-8 lg:flex">{LEFT.map(link)}</nav>
           <button className="justify-self-start text-[15px] lg:hidden" onClick={() => { tick(); setMenu(!menu); }}>{menu ? "Close" : "Menu"}</button>
